@@ -54,11 +54,11 @@ app.use("/api/payments", paymentRoutes);
 // Production setup
 if (process.env.NODE_ENV === "production") {
   // Serve static files from frontend build
-  app.use(express.static(path.join(__dirname, "frontend/dist")));
+  app.use(express.static(path.join(__dirname, "./frontend/dist")));
 
   // Catch-all handler: send back frontend's index.html for any non-API routes
   app.get("/:path", (req, res) => {
-    res.sendFile(path.join(__dirname, "frontend/dist/index.html"));
+    res.sendFile(path.join(__dirname, "./frontend/dist/index.html"));
   });
 } else {
   // Development 404 handler for API routes only
