@@ -140,8 +140,6 @@ export const bookingService = {
     const response = await api.put(`/bookings/${id}/manual-confirm`);
     return response.data;
   },
-
-  // New admin methods
   getAllBookings: async (params = {}) => {
     const response = await api.get('/bookings/admin/all', { params });
     return response;
