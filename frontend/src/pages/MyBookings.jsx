@@ -435,7 +435,7 @@ const MyBookings = () => {
                 <div className="p-4 sm:p-6">
                   <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
                     <img
-                      src={event.imageUrl || 'https://via.placeholder.com/1200x400'}
+                      src={event.imageUrl || 'https://picsum.photos/1200/400'}
                       alt={event.title || 'Event'}
                       className="w-full md:w-48 h-32 object-cover rounded-lg"
                     />

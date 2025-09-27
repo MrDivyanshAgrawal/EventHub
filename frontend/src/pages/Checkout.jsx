@@ -65,54 +65,73 @@ const CheckoutForm = ({ selectedSeats, event, eventId }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!stripe || !elements || !clientSecret) {
+  if (!stripe || !elements || !clientSecret) {
+    return;
+  }
+
+  setIsProcessing(true);
+
+  try {
+    // Step 1: Create booking FIRST (with pending status)
+    const bookingData = {
+      eventId: eventId,
+      selectedSeats: selectedSeats.map((seat) => seat._id),
+      paymentId: null, // Will be updated after payment
+      status: 'pending'
+    };
+
+    console.log("Creating pending booking:", bookingData);
+    const pendingBooking = await bookingService.createBooking(bookingData);
+    
+    // Step 2: Confirm payment with Stripe
+    const { error, paymentIntent } = await stripe.confirmCardPayment(
+      clientSecret,
+      {
+        payment_method: {
+          card: elements.getElement(CardElement),
+        },
+      }
+    );
+
+    if (error) {
+      console.log("Stripe error details:", error);
+      // If payment fails, cancel the pending booking
+      await bookingService.cancelBooking(pendingBooking._id);
+      toast.error(error.message);
+      setIsProcessing(false);
       return;
     }
 
-    setIsProcessing(true);
-
-    try {
-      const { error, paymentIntent } = await stripe.confirmCardPayment(
-        clientSecret,
-        {
-          payment_method: {
-            card: elements.getElement(CardElement),
-          },
-        }
-      );
-
-      if (error) {
-        console.log("Stripe error details:", error);
-        toast.error(error.message);
-        setIsProcessing(false);
-        return;
-      }
-
-      if (paymentIntent.status === "succeeded") {
-        const bookingData = {
-          eventId: eventId,
-          selectedSeats: selectedSeats.map((seat) => seat._id),
-          paymentId: paymentIntent.id,
-        };
-
-        console.log("Sending booking data:", bookingData);
-        const booking = await bookingService.createBooking(bookingData);
+    if (paymentIntent.status === "succeeded") {
+      // Step 3: Update booking with payment ID
+      try {
+        await bookingService.confirmBooking(pendingBooking._id, {
+          paymentId: paymentIntent.id
+        });
+        
         toast.success("Payment successful! Your booking is confirmed.");
         navigate(`/my-bookings`, { replace: true });
+      } catch (updateError) {
+        console.error("Error updating booking:", updateError);
+        // Booking exists but couldn't update - this will be handled by webhook
+        toast.success("Payment processed! Your booking will be confirmed shortly.");
+        navigate(`/my-bookings`, { replace: true });
       }
-    } catch (error) {
-      console.error("Detailed payment error:", error);
-      if (error.response) {
-        console.error("Response error data:", error.response.data);
-      }
-      toast.error("Payment failed. Please try again.");
-    } finally {
-      setIsProcessing(false);
     }
-  };
+  } catch (error) {
+    console.error("Detailed payment error:", error);
+    if (error.response) {
+      console.error("Response error data:", error.response.data);
+    }
+    toast.error("Payment failed. Please try again.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
 
   const cardElementOptions = {
     style: {
