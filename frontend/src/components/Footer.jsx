@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  CalendarDaysIcon, 
   EnvelopeIcon, 
   PhoneIcon, 
   ClockIcon 
@@ -14,10 +13,11 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center space-x-3">
-              <CalendarDaysIcon className="h-7 w-7 sm:h-8 sm:w-8 text-primary-400" />
-              <span className="text-lg sm:text-xl font-bold">EventHub India</span>
-            </div>
+            <img 
+              src="/Logo.svg" 
+              alt="EventHub - Book Your Next Experience" 
+              className="h-14 sm:h-18 w-auto"
+            />
             <p className="text-gray-400 text-xs sm:text-sm">
               Discover and book amazing events across India. Create unforgettable experiences with our comprehensive event booking platform.
             </p>
@@ -118,7 +118,7 @@ const Footer = () => {
 
         <div className="border-t border-gray-800 mt-8 sm:mt-12 pt-6 sm:pt-8">
           <div className="text-center text-gray-400 text-xs sm:text-sm">
-            <p>&copy; {new Date().getFullYear()} EventHub India. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} EventHub. All rights reserved.</p>
             <p className="mt-2">
               Made with ❤️ in India | 
               <Link to="/terms" className="ml-1 hover:text-white">Terms</Link> | 

@@ -13,7 +13,7 @@ const About = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center">
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-              About EventHub India
+              About EventHub 
             </h1>
             <p className="text-lg md:text-xl max-w-2xl mx-auto text-primary-100">
               Bringing Indians together with unforgettable experiences since
@@ -30,7 +30,7 @@ const About = () => {
                 Our Story
               </h2>
               <p className="text-gray-600 mb-4">
-                EventHub India was founded in 2020 to simplify event discovery
+                EventHub  was founded in 2020 to simplify event discovery
                 and bookings for people across the nation. What began as a local
                 community platform in Mumbai has grown into a pan-India
                 solution.
@@ -42,7 +42,7 @@ const About = () => {
               </p>
               <p className="text-gray-600">
                 Today, thousands of Indian event organizers and millions of
-                attendees use EventHub India to connect, celebrate, and create
+                attendees use EventHub to connect, celebrate, and create
                 lifelong memories. 🎉
               </p>
             </div>
@@ -66,7 +66,7 @@ const About = () => {
               Our Values
             </h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
-              The guiding principles of EventHub India
+              The guiding principles of EventHub 
             </p>
           </div>
 
@@ -123,7 +123,7 @@ const About = () => {
               Meet Our Indian Team
             </h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
-              The driving force behind EventHub India
+              The driving force behind EventHub 
             </p>
           </div>
 
