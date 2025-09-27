@@ -23,11 +23,11 @@ const EventCard = ({ event }) => {
     >
       <div className="relative h-40 sm:h-48 overflow-hidden">
         <img 
-          src={event.imageUrl || 'https://via.placeholder.com/400x250'} 
+          src={event.imageUrl || 'https://picsum.photos/400/250'} 
           alt={event.title || 'Event'}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/400x250';
+            e.target.src = 'https://picsum.photos/400/250';
           }}
         />
         <div className="absolute bottom-3 left-3">

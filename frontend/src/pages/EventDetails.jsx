@@ -271,7 +271,7 @@ const EventDetails = () => {
           src={
             event.galleryImages && event.galleryImages.length > 0 && activeGalleryImage < event.galleryImages.length
               ? event.galleryImages[activeGalleryImage]
-              : event.imageUrl || 'https://via.placeholder.com/1200x400'
+              : event.imageUrl || 'https://picsum.photos/1200/400'
           } 
           alt={event.title}
           className="w-full h-full object-cover"

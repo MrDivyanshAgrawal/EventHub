@@ -12,8 +12,20 @@ class SocketService {
       return;
     }
     
-    this.socket = io(SOCKET_URL, {
+    // Validate and clean SOCKET_URL
+    let socketUrl = SOCKET_URL;
+    if (!socketUrl || typeof socketUrl !== 'string') {
+      console.error('Invalid SOCKET_URL:', socketUrl);
+      socketUrl = 'https://eventhub-t9i2.onrender.com'; // fallback
+    }
+    
+    socketUrl = socketUrl.replace(/\/+$/, '');
+    
+    console.log('Connecting to socket URL:', socketUrl);
+    
+    this.socket = io(socketUrl, {
       withCredentials: true,
+      transports: ['websocket', 'polling'], // Add explicit transports
     });
 
     this.socket.on('connect', () => {
