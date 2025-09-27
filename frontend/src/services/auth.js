@@ -1,6 +1,5 @@
 import api from './api';
 
-// Export authService
 export const authService = {
   signup: async (data) => {
     const response = await api.post('/auth/signup', data);
@@ -34,7 +33,6 @@ export const authService = {
 };
 
 export const eventService = {
-  // Public routes
   getEvents: async (params = {}) => {
     const response = await api.get('/events', { params });
     return response.data;
@@ -45,14 +43,13 @@ export const eventService = {
     return response.data;
   },
 
-  // Protected routes
   selectSeat: async (eventId, seatId) => {
     try {
       const response = await api.post(`/events/${eventId}/select-seat`, { seatId });
       return response.data;
     } catch (error) {
       console.error('Error selecting seat:', error);
-      throw error; // Rethrow to allow proper error handling
+      throw error; 
     }
   },
 
@@ -62,13 +59,11 @@ export const eventService = {
       console.log(`Successfully released seat ${seatId} for event ${eventId}`);
       return response.data;
     } catch (error) {
-      // Log but don't throw to prevent breaking cleanup processes
       console.error(`Error releasing seat ${seatId} for event ${eventId}:`, error);
       return { success: false, error: error.message };
     }
   },
 
-  // Organizer routes
   getOrganizerEvents: async () => {
     const response = await api.get('/events/organizer/events');
     return response.data;
@@ -131,7 +126,6 @@ export const bookingService = {
     return response.data;
   },
 
-  // Organizer routes
   getOrganizerBookings: async () => {
     const response = await api.get('/bookings/organizer');
     return response.data;
@@ -141,9 +135,26 @@ export const bookingService = {
     const response = await api.put('/bookings/verify-ticket', { ticketCode });
     return response.data;
   },
-   manualConfirmBooking: async (id) => {
+
+  manualConfirmBooking: async (id) => {
     const response = await api.put(`/bookings/${id}/manual-confirm`);
     return response.data;
+  },
+
+  // New admin methods
+  getAllBookings: async (params = {}) => {
+    const response = await api.get('/bookings/admin/all', { params });
+    return response;
+  },
+
+  getBookingAnalytics: async (params = {}) => {
+    const response = await api.get('/bookings/admin/analytics', { params });
+    return response;
+  },
+
+  bulkBookingAction: async (data) => {
+    const response = await api.put('/bookings/admin/bulk-action', data);
+    return response;
   },
 };
 
@@ -164,7 +175,6 @@ export const paymentService = {
   },
 };
 
-// Add a default export as a fallback
 export default {
   authService,
   eventService,

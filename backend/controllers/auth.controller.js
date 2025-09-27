@@ -48,15 +48,12 @@ export const signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
     
-    // Create user data object
     const userData = { name, email, password };
     
-    // Only set role if provided and it's valid
     if (role && ["organizer", "admin"].includes(role)) {
       userData.role = role;
     }
     
-    // Upload profile image if provided
     if (profileImage) {
       const uploadResult = await cloudinary.uploader.upload(profileImage, {
         folder: "event_booking/profiles"
@@ -182,12 +179,10 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     
-    // Update name if provided
     if (name) {
       user.name = name;
     }
     
-    // Update profile image if provided
     if (profileImage && profileImage !== user.profileImage) {
       const uploadResult = await cloudinary.uploader.upload(profileImage, {
         folder: "event_booking/profiles"

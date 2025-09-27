@@ -3,8 +3,6 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
-
-// Pages
 import Home from './pages/Home.jsx';
 import Events from './pages/Events.jsx';
 import EventDetails from './pages/EventDetails.jsx';
@@ -21,6 +19,7 @@ import CreateEvent from './pages/CreateEvent.jsx';
 import EditEvent from './pages/EditEvent.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Privacy from './pages/Privacy.jsx';
+import AdminBookings from './pages/AdminBookings.jsx'; 
 
 function App() {
   return (
@@ -48,7 +47,6 @@ function App() {
         />
         <Layout>
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetails />} />
@@ -58,7 +56,6 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
-            {/* Protected Routes */}
             <Route
               path="/profile"
               element={
@@ -84,7 +81,6 @@ function App() {
               }
             />
             
-            {/* Organizer/Admin Routes */}
             <Route
               path="/dashboard"
               element={
@@ -109,8 +105,15 @@ function App() {
                 </PrivateRoute>
               }
             />
+            <Route
+              path="/admin/bookings"
+              element={
+                <PrivateRoute roles={['admin']}>
+                  <AdminBookings />
+                </PrivateRoute>
+              }
+            />
             
-            {/* 404 Not Found Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

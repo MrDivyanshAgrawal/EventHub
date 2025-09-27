@@ -23,7 +23,6 @@ const Header = () => {
     setMobileMenuOpen(false);
   };
 
-  // User avatar component - reusable for consistency
   const UserAvatar = ({ size = 'medium', className = '' }) => {
     const sizes = {
       small: 'h-8 w-8',
@@ -54,7 +53,6 @@ const Header = () => {
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Logo */}
           <Link to="/" className="flex items-center space-x-2" aria-label="EventHub India">
             <CalendarDaysIcon className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary-600" />
             <span className="text-base sm:text-lg md:text-xl font-bold text-gray-900">
@@ -62,7 +60,6 @@ const Header = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
             <Link 
               to="/events" 
@@ -88,7 +85,6 @@ const Header = () => {
             )}
           </nav>
 
-          {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <button
               type="button"
@@ -107,7 +103,6 @@ const Header = () => {
             </button>
           </div>
 
-          {/* User Menu (Desktop) */}
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <Menu as="div" className="relative">
@@ -209,7 +204,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
       <Transition
         show={mobileMenuOpen}
         enter="transition ease-out duration-100 transform"
@@ -258,7 +252,6 @@ const Header = () => {
             )}
           </div>
           
-          {/* Mobile user section */}
           {user ? (
             <div className="pt-4 pb-3 border-t border-gray-200">
               <div className="flex items-center px-4">

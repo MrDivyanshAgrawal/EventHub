@@ -75,12 +75,11 @@ const bookingSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Add indexes for common queries
 bookingSchema.index({ user: 1 });
 bookingSchema.index({ event: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ paymentStatus: 1 });
-bookingSchema.index({ paymentId: 1 }); // Add index for paymentId for faster lookups
+bookingSchema.index({ paymentId: 1 }); 
 
 const Booking = mongoose.model("Booking", bookingSchema);
 

@@ -14,7 +14,11 @@ import {
   CheckBadgeIcon,
   EyeIcon,
   ExclamationTriangleIcon,
-  EllipsisVerticalIcon
+  EllipsisVerticalIcon,
+  InformationCircleIcon,
+  Cog6ToothIcon,
+  UserGroupIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 import {
   BarChart,
@@ -47,15 +51,23 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [bookingsError, setBookingsError] = useState(false);
+  const [eventsError, setEventsError] = useState(false);
   const [ticketVerification, setTicketVerification] = useState('');
   const [activeChart, setActiveChart] = useState('revenue');
   const [showActionMenu, setShowActionMenu] = useState(null);
+  const [debugInfo, setDebugInfo] = useState({});
+  const [adminStats, setAdminStats] = useState(null);
+  const [adminStatsLoading, setAdminStatsLoading] = useState(false);
+
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    if (isAdmin) {
+      fetchAdminStats();
+    }
+  }, [isAdmin]);
 
-  // Close action menu when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setShowActionMenu(null);
     if (showActionMenu) {
@@ -64,121 +76,208 @@ const Dashboard = () => {
     }
   }, [showActionMenu]);
 
-  // Helper function to calculate tickets sold safely
   const calculateTicketsSold = (event) => {
-    // Ensure all values are numbers and not negative
     const totalSeats = Math.max(0, event.totalSeats || 0);
     const availableSeats = Math.max(0, event.availableSeats || 0);
     
-    // Ensure sold tickets is never negative
     return Math.max(0, totalSeats - availableSeats);
+  };
+
+  const fetchAdminStats = async () => {
+    if (!isAdmin) return;
+    
+    try {
+      setAdminStatsLoading(true);
+      const [bookingsResponse, analyticsResponse] = await Promise.allSettled([
+        bookingService.getAllBookings({ limit: 5 }),
+        bookingService.getBookingAnalytics()
+      ]);
+
+      if (bookingsResponse.status === 'fulfilled') {
+        const adminBookingStats = {
+          totalSystemBookings: bookingsResponse.value.data.total || 0,
+          recentBookings: bookingsResponse.value.data.data || [],
+          systemRevenue: bookingsResponse.value.data.stats?.reduce((sum, stat) => 
+            sum + (stat._id === 'confirmed' ? stat.totalRevenue : 0), 0) || 0
+        };
+
+        if (analyticsResponse.status === 'fulfilled') {
+          adminBookingStats.analytics = analyticsResponse.value.data;
+        }
+
+        setAdminStats(adminBookingStats);
+      }
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+    } finally {
+      setAdminStatsLoading(false);
+    }
   };
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setDebugInfo({ 
+        userRole: user?.role, 
+        userId: user?._id,
+        timestamp: new Date().toISOString()
+      });
       
-      // First, fetch events data which seems to work correctly
       try {
-        const eventsResponse = await eventService.getOrganizerEvents();
-        const eventsData = Array.isArray(eventsResponse.data) ? eventsResponse.data : 
-                           (eventsResponse.data?.data || []);
-        setEvents(eventsData);
+        console.log('🔍 Fetching events for user:', user?.role, user?._id);
+        console.log('🌐 Making request to: /events/organizer/events');
         
-        // Calculate basic stats from events only - WITH FIXED CALCULATION
+        const eventsResponse = await eventService.getOrganizerEvents();
+        console.log('📊 Raw events response:', eventsResponse);
+        
+        let eventsData = [];
+        if (eventsResponse) {
+          if (Array.isArray(eventsResponse)) {
+            eventsData = eventsResponse;
+          } else if (eventsResponse.data) {
+            if (Array.isArray(eventsResponse.data)) {
+              eventsData = eventsResponse.data;
+            } else if (eventsResponse.data.data) {
+              eventsData = Array.isArray(eventsResponse.data.data) ? eventsResponse.data.data : [];
+            } else if (eventsResponse.data.events) {
+              eventsData = Array.isArray(eventsResponse.data.events) ? eventsResponse.data.events : [];
+            }
+          } else if (eventsResponse.events) {
+            eventsData = Array.isArray(eventsResponse.events) ? eventsResponse.events : [];
+          }
+        }
+        
+        console.log('📋 Processed events data:', eventsData);
+        console.log('📊 Events count:', eventsData.length);
+        
+        setEvents(eventsData);
+        setEventsError(false);
+        
         const now = new Date();
         const eventStats = eventsData.reduce((acc, event) => {
-          const eventDate = new Date(event.startDate);
           acc.totalEvents++;
-          
-          // Use the safe calculation function
           acc.totalTicketsSold += calculateTicketsSold(event);
           
+          const eventDate = new Date(event.startDate);
           if (eventDate > now) acc.upcomingEvents++;
           return acc;
         }, { totalEvents: 0, totalTicketsSold: 0, totalRevenue: 0, upcomingEvents: 0 });
         
-        // Set stats from events data (without revenue for now)
         setStats(eventStats);
+        console.log('📈 Calculated stats:', eventStats);
+        
       } catch (eventsError) {
-        console.error('Error fetching events:', eventsError);
-        toast.error('Failed to load events data');
-        // Set empty events state
+        console.error('❌ Error fetching events:', eventsError);
+        console.error('Error details:', {
+          message: eventsError.message,
+          response: eventsError.response?.data,
+          status: eventsError.response?.status,
+          config: {
+            url: eventsError.config?.url,
+            method: eventsError.config?.method,
+            headers: eventsError.config?.headers
+          }
+        });
+        
+        setEventsError(true);
         setEvents([]);
         setStats({ totalEvents: 0, totalTicketsSold: 0, totalRevenue: 0, upcomingEvents: 0 });
+        
+        if (eventsError.response?.status === 401) {
+          toast.error('Please log in again. Your session may have expired.');
+        } else if (eventsError.response?.status === 403) {
+          toast.error('Access denied. You may not have permission to view events.');
+        } else if (eventsError.response?.status === 404) {
+          toast.error('Events service not found. Please contact support.');
+        } else if (eventsError.response?.status >= 500) {
+          toast.error('Server error. Please try again later.');
+        } else {
+          toast.error(`Failed to load events: ${eventsError.message}`);
+        }
       }
       
-      // Now try to fetch booking data (if this fails, we already have event stats)
       try {
-        // Create a local API function that won't throw in the component
+        console.log('🎫 Fetching bookings...');
+        console.log('🌐 Making request to: /bookings/organizer');
+        
         const safeBookingsFetch = async () => {
           try {
-            // Add a timeout to prevent hanging
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 15000); 
             
-            const bookingsResponse = await bookingService.getOrganizerBookings();
+            const bookingsResponse = await bookingService.getOrganizerBookings({
+              signal: controller.signal
+            });
             clearTimeout(timeoutId);
             
-            return {
-              success: true,
-              data: Array.isArray(bookingsResponse.data) ? bookingsResponse.data : 
-                    (bookingsResponse.data?.data || [])
-            };
+            console.log('🎫 Raw bookings response:', bookingsResponse);
+            
+            let bookingsData = [];
+            if (bookingsResponse) {
+              if (Array.isArray(bookingsResponse)) {
+                bookingsData = bookingsResponse;
+              } else if (bookingsResponse.data) {
+                if (Array.isArray(bookingsResponse.data)) {
+                  bookingsData = bookingsResponse.data;
+                } else if (bookingsResponse.data.data) {
+                  bookingsData = Array.isArray(bookingsResponse.data.data) ? bookingsResponse.data.data : [];
+                } else if (bookingsResponse.data.bookings) {
+                  bookingsData = Array.isArray(bookingsResponse.data.bookings) ? bookingsResponse.data.bookings : [];
+                }
+              } else if (bookingsResponse.bookings) {
+                bookingsData = Array.isArray(bookingsResponse.bookings) ? bookingsResponse.bookings : [];
+              }
+            }
+            
+            return { success: true, data: bookingsData };
           } catch (error) {
-            console.warn('Bookings API error:', error);
+            console.warn('🚨 Bookings API error:', error);
             return { success: false, error };
           }
         };
         
-        // Execute the safe fetch
         const bookingResult = await safeBookingsFetch();
         
         if (bookingResult.success) {
           const bookingsData = bookingResult.data;
+          console.log('🎫 Processed bookings data:', bookingsData);
+          console.log('📊 Bookings count:', bookingsData.length);
+          
           setBookings(bookingsData);
           setBookingsError(false);
           
-          // Update revenue in stats from the bookings data
           if (bookingsData.length > 0) {
-            setStats(prev => ({
-              ...prev,
-              totalRevenue: bookingsData.reduce((sum, booking) => {
-                return sum + (booking.status === 'confirmed' ? booking.totalAmount : 0);
-              }, 0)
-            }));
+            const revenue = bookingsData.reduce((sum, booking) => {
+              const amount = booking.status === 'confirmed' ? (booking.totalAmount || 0) : 0;
+              return sum + amount;
+            }, 0);
+            
+            console.log('💰 Calculated revenue:', revenue);
+            setStats(prev => ({ ...prev, totalRevenue: revenue }));
           }
         } else {
-          // Handle bookings API error
+          console.warn('🚨 Bookings fetch failed, using estimated data');
           setBookingsError(true);
           setBookings([]);
           
-          // Estimate revenue based on ticket sales
-          // This is a fallback approximation when booking data isn't available
           const estimatedRevenue = events.reduce((sum, event) => {
-            // Use the safe calculation function
             const soldTickets = calculateTicketsSold(event);
-            
-            // Use average ticket price from seats or a default value
             const avgPrice = event.seats && event.seats.length > 0 
-              ? event.seats.reduce((total, seat) => total + seat.price, 0) / event.seats.length
-              : 499; // Default average ticket price if not available (in ₹)
+              ? event.seats.reduce((total, seat) => total + (seat.price || 0), 0) / event.seats.length
+              : 499;
             return sum + (soldTickets * avgPrice);
           }, 0);
           
-          // Update stats with estimated revenue
-          setStats(prev => ({
-            ...prev,
-            totalRevenue: estimatedRevenue
-          }));
+          console.log('💰 Estimated revenue:', estimatedRevenue);
+          setStats(prev => ({ ...prev, totalRevenue: estimatedRevenue }));
         }
       } catch (bookingError) {
-        console.warn('Outer bookings error catch:', bookingError);
+        console.warn('🚨 Outer bookings error catch:', bookingError);
         setBookingsError(true);
         setBookings([]);
       }
     } catch (error) {
-      console.error('Overall dashboard data error:', error);
+      console.error('💥 Overall dashboard data error:', error);
       toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
@@ -194,7 +293,7 @@ const Dashboard = () => {
       fetchDashboardData();
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+      toast.error(`Failed to delete event: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -205,7 +304,7 @@ const Dashboard = () => {
       fetchDashboardData();
     } catch (error) {
       console.error('Error publishing event:', error);
-      toast.error('Failed to publish event. Make sure the event has seats configured.');
+      toast.error(`Failed to publish event: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -222,14 +321,11 @@ const Dashboard = () => {
 
     try {
       setVerifying(true);
-      
-      // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out')), 5000);
+        setTimeout(() => reject(new Error('Request timed out')), 15000);
       });
       
       try {
-        // Race between the actual request and the timeout
         const response = await Promise.race([
           bookingService.verifyTicket(ticketVerification),
           timeoutPromise
@@ -242,7 +338,7 @@ const Dashboard = () => {
         if (error.message === 'Request timed out') {
           toast.error('Verification request timed out. Please try again.');
           setBookingsError(true);
-        } else if (error.response?.status === 500) {
+        } else if (error.response?.status >= 500) {
           toast.error('Ticket verification service is currently unavailable');
           setBookingsError(true);
         } else {
@@ -267,12 +363,9 @@ const Dashboard = () => {
 
   const generateTicketSalesData = () => {
     if (events.length === 0) {
-      return [
-        { name: 'No Data', sold: 0, available: 0, total: 0 }
-      ];
+      return [{ name: 'No Data', sold: 0, available: 0, total: 0 }];
     }
     
-    // Use the safe calculation function for chart data
     return events.slice(0, 5).map(event => {
       const totalSeats = Math.max(0, event.totalSeats || 0);
       const availableSeats = Math.max(0, event.availableSeats || 0);
@@ -324,7 +417,7 @@ const Dashboard = () => {
           <p className="font-medium text-sm">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-xs sm:text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
+              {entry.name}: {entry.name === 'revenue' ? '₹' : ''}{entry.value}
             </p>
           ))}
         </div>
@@ -333,7 +426,6 @@ const Dashboard = () => {
     return null;
   };
 
-  // Custom Legend for responsive pie chart
   const CustomLegend = (props) => {
     const { payload } = props;
     if (!payload) return null;
@@ -353,50 +445,153 @@ const Dashboard = () => {
     );
   };
 
-  if (loading) return <Loader />;
+  if (loading) return <Loader text="Loading dashboard data..." />;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Organizer Dashboard</h1>
-            <p className="text-sm sm:text-base text-gray-600 mt-1">Welcome back, {user?.name || 'Organizer'}</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+              {user?.role === 'admin' ? 'Admin Dashboard' : 'Organizer Dashboard'}
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              Welcome back, {user?.name || 'User'} 
+              {user?.role && (
+                <span className="ml-1 px-2 py-0.5 text-xs bg-primary-100 text-primary-800 rounded-full">
+                  {user.role}
+                </span>
+              )}
+            </p>
           </div>
-          <Link
-            to="/create-event"
-            className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center text-sm sm:text-base"
-          >
-            <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Create Event</span>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Link
+              to="/create-event"
+              className="btn-primary flex items-center gap-2 w-full sm:w-auto justify-center text-sm sm:text-base"
+            >
+              <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Create Event</span>
+            </Link>
+            {isAdmin && (
+              <Link
+                to="/admin/bookings"
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center gap-2 w-full sm:w-auto justify-center text-sm sm:text-base transition-colors"
+              >
+                <ClipboardDocumentListIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Manage All Bookings</span>
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Warning if bookings API is not available */}
-        {bookingsError && (
-          <div className="mb-4 sm:mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 rounded-r-md">
-            <div className="flex">
-              <ExclamationTriangleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 flex-shrink-0" />
-              <div className="ml-2 sm:ml-3">
-                <p className="text-xs sm:text-sm text-yellow-700">
-                  Booking data is currently unavailable. Some features may be limited.
-                </p>
+        {isAdmin && !adminStatsLoading && adminStats && (
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">System Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100">Total System Bookings</p>
+                    <p className="text-2xl font-bold mt-1">{adminStats.totalSystemBookings}</p>
+                  </div>
+                  <UserGroupIcon className="h-10 w-10 text-blue-200" />
+                </div>
+              </div>
+              <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-100">Platform Revenue</p>
+                    <p className="text-2xl font-bold mt-1">₹{adminStats.systemRevenue.toLocaleString()}</p>
+                  </div>
+                  <CurrencyRupeeIcon className="h-10 w-10 text-green-200" />
+                </div>
+              </div>
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-100">Recent Activity</p>
+                    <p className="text-2xl font-bold mt-1">{adminStats.recentBookings.length}</p>
+                    <p className="text-xs text-purple-200">New bookings today</p>
+                  </div>
+                  <Cog6ToothIcon className="h-10 w-10 text-purple-200" />
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Stats Grid */}
+        {(bookingsError || eventsError) && (
+          <div className="mb-4 sm:mb-6 space-y-3">
+            {eventsError && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-3 sm:p-4 rounded-r-md">
+                <div className="flex">
+                  <ExclamationTriangleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-red-400 flex-shrink-0" />
+                  <div className="ml-2 sm:ml-3">
+                    <p className="text-xs sm:text-sm text-red-700">
+                      <strong>Events data unavailable.</strong> Unable to load events. Please check your connection or try refreshing the page.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        setEventsError(false);
+                        fetchDashboardData();
+                      }}
+                      className="mt-2 text-xs text-red-600 hover:text-red-800 underline"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {bookingsError && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 sm:p-4 rounded-r-md">
+                <div className="flex">
+                  <ExclamationTriangleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 flex-shrink-0" />
+                  <div className="ml-2 sm:ml-3">
+                    <p className="text-xs sm:text-sm text-yellow-700">
+                      <strong>Booking data unavailable.</strong> Revenue data may be estimated. Ticket verification is disabled.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 sm:mb-6 bg-blue-50 border-l-4 border-blue-400 p-3 sm:p-4 rounded-r-md">
+            <div className="flex">
+              <InformationCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 flex-shrink-0" />
+              <div className="ml-2 sm:ml-3">
+                <p className="text-xs sm:text-sm text-blue-700">
+                  <strong>Debug Info:</strong> User: {debugInfo.userRole} | Events: {events.length} | Bookings: {bookings.length} | Errors: Events={eventsError ? 'Yes' : 'No'}, Bookings={bookingsError ? 'Yes' : 'No'}
+                </p>
+                <button 
+                  onClick={() => console.log('Current state:', { events, bookings, stats, debugInfo, adminStats })}
+                  className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  Log state to console
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
           <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">Total Events</p>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  {isAdmin ? 'My Events' : 'Total Events'}
+                </p>
                 <p className="text-lg sm:text-2xl font-bold mt-1">{stats.totalEvents}</p>
               </div>
               <CalendarDaysIcon className="h-8 w-8 sm:h-10 sm:w-10 text-primary-600" />
             </div>
+            {eventsError && (
+              <p className="text-xs text-red-500 mt-1">* Data unavailable</p>
+            )}
           </div>
           
           <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
@@ -412,7 +607,9 @@ const Dashboard = () => {
           <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs sm:text-sm text-gray-600">Total Revenue</p>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  {isAdmin ? 'My Revenue' : 'Total Revenue'}
+                </p>
                 <p className="text-lg sm:text-2xl font-bold mt-1">
                   ₹{stats.totalRevenue.toLocaleString()}
                 </p>
@@ -435,9 +632,46 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Ticket Verification */}
+        {isAdmin && adminStats && adminStats.recentBookings.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base sm:text-lg font-semibold">Recent Platform Activity</h3>
+              <Link 
+                to="/admin/bookings" 
+                className="text-sm text-primary-600 hover:text-primary-800 underline"
+              >
+                View All
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {adminStats.recentBookings.slice(0, 3).map((booking) => (
+                <div key={booking._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div>
+                    <p className="font-medium text-sm">{booking.event?.title}</p>
+                    <p className="text-xs text-gray-500">
+                      by {booking.user?.name} • {format(new Date(booking.createdAt), 'MMM d, h:mm a')}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-sm">₹{booking.totalAmount}</p>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                      booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {booking.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
-          <h3 className="text-base sm:text-lg font-semibold mb-4">Verify Ticket</h3>
+          <h3 className="text-base sm:text-lg font-semibold mb-4">
+            Verify Ticket {isAdmin && <span className="text-sm font-normal text-gray-500">(All Events)</span>}
+          </h3>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <input
               type="text"
@@ -450,7 +684,7 @@ const Dashboard = () => {
             <button
               onClick={handleVerifyTicket}
               disabled={bookingsError || verifying || !ticketVerification.trim()}
-              className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto text-sm sm:text-base"
+              className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {verifying ? (
                 <span>Verifying...</span>
@@ -469,9 +703,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          {/* Revenue/Tickets Chart */}
           <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
               <h3 className="text-base sm:text-lg font-semibold">
@@ -507,7 +739,7 @@ const Dashboard = () => {
                   {activeChart === 'revenue' ? (
                     <LineChart data={revenueData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip formatter={(value) => `₹${value}`} content={<CustomTooltip />} />
                       <Line 
@@ -523,7 +755,7 @@ const Dashboard = () => {
                     <BarChart data={ticketSalesData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={60} />
-                      <YAxis tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="sold" stackId="a" fill="#10b981" name="Sold" />
                       <Bar dataKey="available" stackId="a" fill="#fbbf24" name="Available" />
@@ -532,18 +764,27 @@ const Dashboard = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  No data to display
+                  <div className="text-center">
+                    <p className="text-sm">No data to display</p>
+                    {eventsError && (
+                      <button 
+                        onClick={fetchDashboardData}
+                        className="mt-2 text-xs text-primary-600 hover:text-primary-800 underline"
+                      >
+                        Retry loading data
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
             {bookingsError && activeChart === 'revenue' && (
               <p className="text-xs text-gray-500 mt-2 text-center">
-                * Showing sample data
+                * Showing sample data due to booking service unavailability
               </p>
             )}
           </div>
 
-          {/* Category Distribution Pie Chart */}
           <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-semibold mb-4">Events by Category</h3>
             <div className="h-48 sm:h-64">
@@ -570,17 +811,37 @@ const Dashboard = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  No events to display
+                  <div className="text-center">
+                    <p className="text-sm">No events to display</p>
+                    {eventsError && (
+                      <button 
+                                               onClick={fetchDashboardData}
+                        className="mt-2 text-xs text-primary-600 hover:text-primary-800 underline"
+                      >
+                        Retry loading events
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Events Table - Desktop */}
         <div className="hidden md:block bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="p-4 sm:p-6 border-b">
+          <div className="p-4 sm:p-6 border-b flex justify-between items-center">
             <h3 className="text-lg font-semibold">Your Events</h3>
+            {eventsError && (
+              <button 
+                onClick={() => {
+                  setEventsError(false);
+                  fetchDashboardData();
+                }}
+                className="text-sm text-primary-600 hover:text-primary-800 underline"
+              >
+                Retry loading events
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -610,14 +871,31 @@ const Dashboard = () => {
                 {events.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-4 sm:px-6 py-12 text-center text-gray-500">
-                      No events yet. Create your first event to get started.
+                      <div className="space-y-2">
+                        <p>
+                          {eventsError 
+                            ? 'Unable to load events. Please check your connection and try again.'
+                            : 'No events yet. Create your first event to get started.'
+                          }
+                        </p>
+                        {eventsError && (
+                          <button 
+                            onClick={() => {
+                              setEventsError(false);
+                              fetchDashboardData();
+                            }}
+                            className="text-primary-600 hover:text-primary-800 underline"
+                          >
+                            Try again
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   events.map(event => {
                     const eventDate = new Date(event.startDate);
                     const isPast = eventDate < new Date();
-                    // Use the safe calculation function
                     const ticketsSold = calculateTicketsSold(event);
                     const totalSeats = Math.max(0, event.totalSeats || 0);
                     
@@ -657,14 +935,14 @@ const Dashboard = () => {
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               to={`/events/${event._id}`}
-                              className="text-gray-600 hover:text-gray-900"
+                              className="text-gray-600 hover:text-gray-900 transition-colors"
                               title="View"
                             >
                               <EyeIcon className="h-5 w-5" />
                             </Link>
                             <Link
                               to={`/edit-event/${event._id}`}
-                              className="text-primary-600 hover:text-primary-900"
+                              className="text-primary-600 hover:text-primary-900 transition-colors"
                               title="Edit"
                             >
                               <PencilIcon className="h-5 w-5" />
@@ -672,7 +950,7 @@ const Dashboard = () => {
                             {event.status === 'draft' && !isPast && (
                               <button
                                 onClick={() => handlePublishEvent(event._id)}
-                                className="text-green-600 hover:text-green-900"
+                                className="text-green-600 hover:text-green-900 transition-colors"
                                 title="Publish"
                               >
                                 <CheckBadgeIcon className="h-5 w-5" />
@@ -680,7 +958,7 @@ const Dashboard = () => {
                             )}
                             <button 
                               onClick={() => handleDeleteEvent(event._id)}
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 hover:text-red-900 transition-colors"
                               title="Delete"
                             >
                               <TrashIcon className="h-5 w-5" />
@@ -696,18 +974,47 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Events Cards - Mobile */}
         <div className="md:hidden space-y-4">
-          <h3 className="text-lg font-semibold mb-4">Your Events</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold mb-4">Your Events</h3>
+            {eventsError && (
+              <button 
+                onClick={() => {
+                  setEventsError(false);
+                  fetchDashboardData();
+                }}
+                className="text-sm text-primary-600 hover:text-primary-800 underline"
+              >
+                Retry
+              </button>
+            )}
+          </div>
           {events.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm p-6 text-center text-gray-500">
-              No events yet. Create your first event to get started.
+              <div className="space-y-2">
+                <p>
+                  {eventsError 
+                    ? 'Unable to load events. Please check your connection and try again.'
+                    : 'No events yet. Create your first event to get started.'
+                  }
+                </p>
+                {eventsError && (
+                  <button 
+                    onClick={() => {
+                      setEventsError(false);
+                      fetchDashboardData();
+                    }}
+                    className="text-primary-600 hover:text-primary-800 underline"
+                  >
+                    Try again
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             events.map(event => {
               const eventDate = new Date(event.startDate);
               const isPast = eventDate < new Date();
-              // Use the safe calculation function
               const ticketsSold = calculateTicketsSold(event);
               const totalSeats = Math.max(0, event.totalSeats || 0);
               
@@ -717,7 +1024,7 @@ const Dashboard = () => {
                     <div className="flex-1">
                       <Link 
                         to={`/events/${event._id}`}
-                        className="text-primary-600 hover:text-primary-700 font-medium text-base"
+                        className="text-primary-600 hover:text-primary-700 font-medium text-base transition-colors"
                       >
                         {event.title}
                       </Link>
@@ -731,7 +1038,7 @@ const Dashboard = () => {
                           e.stopPropagation();
                           setShowActionMenu(showActionMenu === event._id ? null : event._id);
                         }}
-                        className="p-1 rounded-full hover:bg-gray-100"
+                        className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                       >
                         <EllipsisVerticalIcon className="h-5 w-5 text-gray-500" />
                       </button>
@@ -740,7 +1047,7 @@ const Dashboard = () => {
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
                           <Link
                             to={`/events/${event._id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                             onClick={() => setShowActionMenu(null)}
                           >
                             <EyeIcon className="h-4 w-4 mr-3" />
@@ -748,7 +1055,7 @@ const Dashboard = () => {
                           </Link>
                           <Link
                             to={`/edit-event/${event._id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                             onClick={() => setShowActionMenu(null)}
                           >
                             <PencilIcon className="h-4 w-4 mr-3" />
@@ -760,7 +1067,7 @@ const Dashboard = () => {
                                 handlePublishEvent(event._id);
                                 setShowActionMenu(null);
                               }}
-                              className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-gray-100"
+                              className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-gray-100 transition-colors"
                             >
                               <CheckBadgeIcon className="h-4 w-4 mr-3" />
                               Publish
@@ -771,7 +1078,7 @@ const Dashboard = () => {
                               handleDeleteEvent(event._id);
                               setShowActionMenu(null);
                             }}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-gray-100"
+                            className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-gray-100 transition-colors"
                           >
                             <TrashIcon className="h-4 w-4 mr-3" />
                             Delete
@@ -781,13 +1088,15 @@ const Dashboard = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full capitalize">
-                      {event.category || 'Uncategorized'}
-                    </span>
-                    <span className="text-gray-500">
-                      {ticketsSold}/{totalSeats} sold
-                    </span>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                      <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full capitalize">
+                        {event.category || 'Uncategorized'}
+                      </span>
+                      <span className="text-gray-500 text-xs sm:text-sm">
+                        {ticketsSold}/{totalSeats} sold
+                      </span>
+                    </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       isPast 
                         ? 'bg-gray-100 text-gray-800' 
@@ -803,6 +1112,59 @@ const Dashboard = () => {
             })
           )}
         </div>
+
+        {isAdmin && (
+          <div className="mt-8 md:hidden">
+            <h3 className="text-lg font-semibold mb-4">Admin Tools</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <Link
+                to="/admin/bookings"
+                className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-purple-500 hover:bg-purple-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Manage All Bookings</p>
+                    <p className="text-sm text-gray-600">View and manage platform bookings</p>
+                  </div>
+                  <ClipboardDocumentListIcon className="h-6 w-6 text-purple-600" />
+                </div>
+              </Link>
+              {adminStats && (
+                <div className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">System Stats</p>
+                      <p className="text-sm text-gray-600">
+                        {adminStats.totalSystemBookings} total bookings • ₹{adminStats.systemRevenue.toLocaleString()} revenue
+                      </p>
+                    </div>
+                    <UserGroupIcon className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Admin Loading State */}
+        {isAdmin && adminStatsLoading && (
+          <div className="mt-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">System Overview</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="h-10 w-10 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -27,17 +27,13 @@ const Events = () => {
     date: searchParams.get('date') || ''
   });
 
-  // Track pagination
   const [pagination, setPagination] = useState({
     currentPage: parseInt(searchParams.get('page') || '1'),
     totalPages: 1,
     totalEvents: 0
   });
-
-  // Debounced search value
   const debouncedSearch = useDebounce(filters.search, 500);
 
-  // Comprehensive list of Indian Cities
   const INDIAN_CITIES = [
     'Mumbai',
     'Delhi',
@@ -129,7 +125,6 @@ const Events = () => {
     'Maheshtala'
   ].sort();
 
-  // Keep filters in sync with URL (e.g., back/forward navigation)
   useEffect(() => {
     setFilters({
       search: searchParams.get('search') || '',
@@ -138,7 +133,6 @@ const Events = () => {
       date: searchParams.get('date') || ''
     });
     
-    // Update current page from URL
     const pageFromUrl = parseInt(searchParams.get('page') || '1');
     setPagination(prev => ({
       ...prev,
@@ -146,9 +140,8 @@ const Events = () => {
     }));
     
     fetchEvents();
-  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]); 
 
-  // Handle debounced search
   useEffect(() => {
     if (debouncedSearch !== undefined) {
       const currentSearchParam = searchParams.get('search') || '';
@@ -156,7 +149,7 @@ const Events = () => {
         handleFilterChange('search', debouncedSearch);
       }
     }
-  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]); 
 
   const fetchEvents = useCallback(async () => {
     setLoading(true);
@@ -165,10 +158,8 @@ const Events = () => {
     try {
       const params = {
         page: Number(searchParams.get('page') || 1),
-        limit: 9 // Show 9 events per page
+        limit: 9 
       };
-
-      // Add filters to params if they exist
       const search = searchParams.get('search');
       const category = searchParams.get('category');
       const city = searchParams.get('city');
@@ -180,13 +171,10 @@ const Events = () => {
       if (date) params.date = date;
 
       const response = await eventService.getEvents(params);
-      console.log('API Response:', response); // Debug the response structure
+      console.log('API Response:', response); 
 
-      // Handle different response structures
       if (response.data && Array.isArray(response.data)) {
-        // If response.data is directly an array of events
         setEvents(response.data);
-        // Calculate pagination if not provided
         setPagination({
           currentPage: params.page,
           totalPages: Math.ceil(response.total / params.limit) || 1,
@@ -194,7 +182,6 @@ const Events = () => {
         });
       } 
       else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        // If response.data.data is an array of events (nested structure)
         setEvents(response.data.data);
         setPagination({
           currentPage: response.data.page || params.page,
@@ -203,7 +190,6 @@ const Events = () => {
         });
       } 
       else if (Array.isArray(response)) {
-        // If the response itself is an array
         setEvents(response);
         setPagination({
           currentPage: params.page,
@@ -212,7 +198,6 @@ const Events = () => {
         });
       } 
       else {
-        // Unexpected response format
         console.error('Unexpected API response structure:', response);
         setEvents([]);
         setError('Could not load events. Unexpected data format.');
@@ -237,8 +222,6 @@ const Events = () => {
     } else {
       newParams.delete(key);
     }
-
-    // Reset to page 1 when filters change
     newParams.set('page', '1');
 
     setSearchParams(newParams);
@@ -246,7 +229,6 @@ const Events = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    // Search is handled by debounce
   };
 
   const handleClearFilters = () => {
@@ -266,25 +248,20 @@ const Events = () => {
     newParams.set('page', String(newPage));
     setSearchParams(newParams);
     
-    // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Check if any filters are active
   const hasActiveFilters = Object.values(filters).some(value => value);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Browse Events</h1>
           <p className="text-sm sm:text-base text-gray-600">Discover amazing events happening near you in India</p>
         </div>
 
-        {/* Filters Section */}
         <div className="bg-white rounded-lg shadow-sm mb-6 sm:mb-8">
-          {/* Mobile Filter Toggle */}
           <div className="lg:hidden">
             <button
               onClick={() => setShowMobileFilters(!showMobileFilters)}
@@ -309,7 +286,6 @@ const Events = () => {
             </button>
           </div>
 
-          {/* Filters Content */}
           <div 
             id="mobile-filters"
             className={`p-4 sm:p-6 ${showMobileFilters ? 'block' : 'hidden lg:block'}`}
@@ -333,7 +309,6 @@ const Events = () => {
             </div>
 
             <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-5 lg:gap-4">
-              {/* Search */}
               <form onSubmit={handleSearch} className="lg:col-span-2">
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1 lg:sr-only">
                   Search
@@ -350,8 +325,6 @@ const Events = () => {
                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
               </form>
-
-              {/* Category Filter */}
               <div>
                 <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1 lg:sr-only">
                   Category
@@ -376,7 +349,6 @@ const Events = () => {
                     <ChevronDownIcon className="h-4 w-4 text-gray-400" />
                   </div>
                   
-                  {/* Category icon display when selected */}
                   {filters.category && (
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                       <span className="text-lg">
@@ -386,8 +358,6 @@ const Events = () => {
                   )}
                 </div>
               </div>
-
-              {/* City Filter */}
               <div>
                 <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1 lg:sr-only">
                   Location
@@ -409,8 +379,6 @@ const Events = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Date Filter */}
               <div>
                 <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1 lg:sr-only">
                   Date
@@ -429,8 +397,6 @@ const Events = () => {
                 </div>
               </div>
             </div>
-
-            {/* Mobile Clear Filters */}
             {hasActiveFilters && (
               <button
                 onClick={handleClearFilters}
@@ -443,8 +409,6 @@ const Events = () => {
             )}
           </div>
         </div>
-
-        {/* Events Grid */}
         {loading ? (
           <Loader />
         ) : error ? (
@@ -481,7 +445,6 @@ const Events = () => {
           </div>
         ) : (
           <>
-            {/* Results count and active filters */}
             <div className="mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="text-sm sm:text-base text-gray-600">
@@ -551,14 +514,12 @@ const Events = () => {
               </div>
             </div>
 
-            {/* Events grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {events.map(event => (
                 <EventCard key={event._id} event={event} />
               ))}
             </div>
 
-            {/* Pagination */}
             {pagination.totalPages > 1 && (
               <div className="mt-8 sm:mt-12">
                 <nav className="flex justify-center" aria-label="Pagination">
@@ -574,7 +535,6 @@ const Events = () => {
                     </button>
 
                     <div className="hidden sm:flex items-center">
-                      {/* Desktop pagination */}
                       {pagination.totalPages <= 7 ? (
                         [...Array(pagination.totalPages)].map((_, i) => (
                           <button
@@ -592,7 +552,6 @@ const Events = () => {
                           </button>
                         ))
                       ) : (
-                        // Condensed pagination for many pages
                         <>
                           {[1, 2].map(pageNum => (
                             <button
@@ -648,7 +607,6 @@ const Events = () => {
                       )}
                     </div>
 
-                    {/* Mobile pagination - simplified */}
                     <div className="flex sm:hidden items-center gap-2 px-2">
                       <span className="text-sm text-gray-700">
                         Page <span className="font-medium">{pagination.currentPage}</span> of{' '}

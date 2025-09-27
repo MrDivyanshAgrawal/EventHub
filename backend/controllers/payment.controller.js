@@ -1,5 +1,3 @@
-// controllers/payment.controller.js
-
 import Stripe from "stripe";
 import Booking from "../models/booking.models.js";
 import Event from "../models/event.models.js";
@@ -9,7 +7,6 @@ import cloudinary from "../utils/cloudinary.utils.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Generate unique ticket code
 const generateTicketCode = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -65,9 +62,8 @@ export const createPaymentIntent = async (req, res) => {
       });
     }
     
-    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: Math.round(amount * 100), 
       currency: "inr",
       metadata: {
         bookingId: bookingId || "",
@@ -120,7 +116,6 @@ export const handleWebhook = async (req, res) => {
   let event;
   
   try {
-    // Verify the webhook
     event = stripe.webhooks.constructEvent(
       req.body,
       signature,
@@ -133,7 +128,6 @@ export const handleWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
   
-  // Handle the event
   try {
     switch (event.type) {
       case "payment_intent.succeeded":
@@ -183,13 +177,11 @@ const handlePaymentSuccess = async (paymentIntent) => {
   try {
     console.log("Processing payment success for intent:", paymentIntent.id);
     
-    // Find booking by payment intent ID
     let booking = await Booking.findOne({ paymentId: paymentIntent.id });
     
     if (!booking) {
       console.log("No booking found for payment intent:", paymentIntent.id);
       
-      // Try to find by metadata if direct lookup fails
       if (paymentIntent.metadata && paymentIntent.metadata.eventId && paymentIntent.metadata.userId) {
         console.log("Trying to find booking by metadata...");
         const recentBookings = await Booking.find({
@@ -202,7 +194,6 @@ const handlePaymentSuccess = async (paymentIntent) => {
           booking = recentBookings[0];
           console.log("Found booking by metadata:", booking._id);
           
-          // Update the payment ID to match
           booking.paymentId = paymentIntent.id;
           await booking.save();
         }
@@ -213,8 +204,6 @@ const handlePaymentSuccess = async (paymentIntent) => {
         return;
       }
     }
-    
-    // Skip if already confirmed
     if (booking.status === "confirmed") {
       console.log("Booking already confirmed:", booking._id);
       return;
@@ -222,11 +211,9 @@ const handlePaymentSuccess = async (paymentIntent) => {
     
     console.log(`Processing booking: ${booking._id}`);
     
-    // Generate ticket code and QR code
     const ticketCode = generateTicketCode();
     const qrCode = await generateQRCode(ticketCode);
     
-    // Update booking
     booking.paymentStatus = "completed";
     booking.status = "confirmed";
     booking.ticketCode = ticketCode;
@@ -235,7 +222,6 @@ const handlePaymentSuccess = async (paymentIntent) => {
     await booking.save();
     console.log(`Booking ${booking._id} confirmed with ticket code ${ticketCode}`);
     
-    // Update event seat availability
     const event = await Event.findById(booking.event);
     if (event) {
       console.log(`Updating seats for event ${event._id}`);
@@ -250,7 +236,6 @@ const handlePaymentSuccess = async (paymentIntent) => {
       await event.save();
       console.log(`Updated seat availability for event ${event._id}`);
       
-      // Notify clients
       io.to(`event:${booking.event}`).emit("seatsBooked", {
         seats: booking.seats.map(seat => seat.seatId.toString())
       });
@@ -283,7 +268,6 @@ const handlePaymentFailure = async (paymentIntent) => {
     booking.status = "cancelled";
     await booking.save();
     
-    // Release seats back to available
     const event = await Event.findById(booking.event);
     
     if (event) {
@@ -346,7 +330,6 @@ const handleRefund = async (charge) => {
     booking.status = "cancelled";
     await booking.save();
     
-    // Release seats if the event hasn't occurred yet
     const event = await Event.findById(booking.event);
     const now = new Date();
     

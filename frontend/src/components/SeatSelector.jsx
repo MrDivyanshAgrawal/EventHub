@@ -13,21 +13,19 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
   const [temporarilyHeldSeats, setTemporarilyHeldSeats] = useState(new Set());
   const [refreshing, setRefreshing] = useState(false);
   
-  // Function to refresh seat data from server
   const refreshSeatData = async () => {
     try {
       setRefreshing(true);
       const freshEvent = await eventService.getEvent(event._id);
       if (freshEvent?.data?.seats) {
         console.log('Refreshed seats data:', freshEvent.data.seats.length, 'seats');
-        // Count available and unavailable seats for debugging
+
         const availableCount = freshEvent.data.seats.filter(seat => seat.isAvailable).length;
         const unavailableCount = freshEvent.data.seats.filter(seat => !seat.isAvailable).length;
         console.log(`Refreshed seat status: Available: ${availableCount}, Unavailable: ${unavailableCount}`);
         
         setSeats(freshEvent.data.seats);
         
-        // Remove any selected seats that are no longer available
         setSelectedSeats(prevSelected => 
           prevSelected.filter(seat => {
             const updatedSeat = freshEvent.data.seats.find(s => s._id === seat._id);
@@ -48,7 +46,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     if (event && event.seats) {
       console.log('Initial seats data:', event.seats.length, 'seats');
       
-      // Count available and unavailable seats for debugging
       const availableCount = event.seats.filter(seat => seat.isAvailable).length;
       const unavailableCount = event.seats.filter(seat => !seat.isAvailable).length;
       console.log(`Initial seat status: Available: ${availableCount}, Unavailable: ${unavailableCount}`);
@@ -56,7 +53,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
       setSeats(event.seats);
       setLoading(false);
       
-      // Auto refresh the seat data once on initial load (after 500ms to ensure UI renders first)
       const timeoutId = setTimeout(() => {
         refreshSeatData();
       }, 500);
@@ -66,7 +62,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
   }, [event]);
   
   useEffect(() => {
-    // Setup socket connection for real-time seat updates
     socketService.connect();
     socketService.joinEvent(event._id);
     
@@ -74,7 +69,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     socketService.onSeatReleased(handleSeatReleasedByOther);
     socketService.onSeatsBooked(handleSeatsBooked);
     
-    // Add error handling for socket disconnections
     if (socketService.socket) {
       socketService.socket.on('disconnect', () => {
         toast.error("Connection lost. Trying to reconnect...");
@@ -83,11 +77,10 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
       socketService.socket.on('reconnect', () => {
         toast.success("Reconnected successfully!");
         socketService.joinEvent(event._id);
-        refreshSeatData(); // Refresh seat data on reconnection
+        refreshSeatData();
       });
     }
     
-    // Set up periodic refresh every 60 seconds
     const intervalId = setInterval(() => {
       refreshSeatData();
     }, 60000);
@@ -95,45 +88,39 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     return () => {
       clearInterval(intervalId);
       
-      // Cleanup - release any seats we have selected
       if (selectedSeats.length > 0) {
         console.log('SeatSelector cleanup: releasing selected seats');
         selectedSeats.forEach(seat => {
-          releaseSeat(seat._id, true); // Pass true to indicate cleanup
+          releaseSeat(seat._id, true); 
         });
       }
       
-      // Leave the event room
       socketService.leaveEvent(event._id);
       
-      // Remove socket listeners
       if (socketService.socket) {
         socketService.socket.off('disconnect');
         socketService.socket.off('reconnect');
       }
     };
-  }, [event._id]); // Only depend on event ID to prevent multiple intervals
+  }, [event._id]); 
   
-  // Add timeout for seat selection warning
   useEffect(() => {
     if (selectedSeats.length > 0) {
       const timeoutId = setTimeout(() => {
         toast.warning("Your seat selection will expire soon. Please complete your booking.", {
           duration: 10000
         });
-      }, 8 * 60 * 1000); // 8 minutes
+      }, 8 * 60 * 1000); 
       
       return () => clearTimeout(timeoutId);
     }
   }, [selectedSeats]);
   
-  // Handle a seat being selected by another user
   const handleSeatSelectedByOther = ({ seatId, userId }) => {
     if (userId !== user?._id) {
       console.log(`Seat ${seatId} temporarily held by another user`);
       setTemporarilyHeldSeats(prev => new Set(prev).add(seatId));
       
-      // Also update the seat in our local state
       setSeats(prevSeats => 
         prevSeats.map(seat => 
           seat._id === seatId ? { ...seat, isAvailable: false } : seat
@@ -142,7 +129,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     }
   };
   
-  // Handle a seat being released by another user
   const handleSeatReleasedByOther = ({ seatId, userId }) => {
     if (userId !== user?._id) {
       console.log(`Seat ${seatId} released by another user`);
@@ -152,7 +138,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
         return newSet;
       });
       
-      // Update the seat in our local state
       setSeats(prevSeats => 
         prevSeats.map(seat => 
           seat._id === seatId ? { ...seat, isAvailable: true } : seat
@@ -161,18 +146,15 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     }
   };
   
-  // Handle seats being permanently booked (after payment)
   const handleSeatsBooked = ({ seats: bookedSeats }) => {
     console.log('Seats permanently booked:', bookedSeats);
     
-    // Mark booked seats as unavailable in our local state
     setSeats(prevSeats => 
       prevSeats.map(seat => 
         bookedSeats.includes(seat._id) ? { ...seat, isAvailable: false } : seat
       )
     );
     
-    // Remove any selected seats that were booked by someone else
     const bookedSelectedSeats = selectedSeats.filter(seat => bookedSeats.includes(seat._id));
     if (bookedSelectedSeats.length > 0) {
       toast.error(`Some of your selected seats were just booked by someone else`);
@@ -181,7 +163,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
       );
     }
     
-    // Remove from temporarily held seats
     setTemporarilyHeldSeats(prev => {
       const newSet = new Set(prev);
       bookedSeats.forEach(seatId => newSet.delete(seatId));
@@ -189,49 +170,40 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     });
   };
   
-  // Handle seat selection
   const handleSeatSelect = async (seat) => {
-    // Check if event is published
+
     if (event.status !== "published") {
       toast.error("Cannot select seats for an unpublished event");
       return;
     }
     
-    // Check if seat is temporarily held by someone else
     if (temporarilyHeldSeats.has(seat._id) && !selectedSeats.some(s => s._id === seat._id)) {
       toast.error('This seat is being selected by another user');
       return;
     }
     
-    // Check if seat is permanently booked
     if (!seat.isAvailable && !selectedSeats.some(s => s._id === seat._id)) {
       toast.error('This seat is already booked');
       return;
     }
     
     try {
-      // If the seat is already selected by us, deselect it
       if (selectedSeats.some(s => s._id === seat._id)) {
         await releaseSeat(seat._id);
         setSelectedSeats(prev => prev.filter(s => s._id !== seat._id));
         
-        // Update local state to show seat as available again
         setSeats(prevSeats => 
           prevSeats.map(s => 
             s._id === seat._id ? { ...s, isAvailable: true } : s
           )
         );
       } else {
-        // Otherwise, select the seat
         await eventService.selectSeat(event._id, seat._id);
         
-        // Add the seat to our selected seats
         setSelectedSeats(prev => [...prev, seat]);
         
-        // Notify socket server to inform other users
         socketService.selectSeat(event._id, seat._id, user?._id);
         
-        // Update local state to mark as selected
         setSeats(prevSeats => 
           prevSeats.map(s => 
             s._id === seat._id ? { ...s, isAvailable: false } : s
@@ -242,17 +214,14 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
       console.error('Seat selection error:', error);
       toast.error(error.response?.data?.message || 'Failed to select seat');
       
-      // If there was an error, refresh seat data to ensure consistency
       refreshSeatData();
     }
   };
   
-  // Release a seat
   const releaseSeat = async (seatId, isCleanup = false) => {
     try {
       await eventService.releaseSeat(event._id, seatId);
       
-      // Notify socket server to inform other users
       if (!isCleanup) {
         socketService.deselectSeat(event._id, seatId, user?._id);
       }
@@ -263,12 +232,10 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     }
   };
   
-  // Update the parent component when selected seats change
   useEffect(() => {
     onSeatSelectionChange(selectedSeats);
   }, [selectedSeats, onSeatSelectionChange]);
   
-  // Group seats by section for better UI organization
   const sectionMap = seats.reduce((acc, seat) => {
     if (!acc[seat.section]) {
       acc[seat.section] = [];
@@ -277,18 +244,13 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     return acc;
   }, {});
   
-  // Calculate total price
   const totalPrice = selectedSeats.reduce((sum, seat) => sum + (seat.price || 0), 0);
   
-  // Helper function to determine seat status - CORRECTED
   const getSeatStatus = (seat) => {
-    // First check if we've selected this seat
     const isSelectedByMe = selectedSeats.some(s => s._id === seat._id);
     
-    // Then check if someone else has temporarily selected it
     const isTemporarilyHeld = temporarilyHeldSeats.has(seat._id);
     
-    // Finally check if it's permanently booked (from database)
     const isPermanentlyBooked = !seat.isAvailable;
     
     if (isSelectedByMe) return 'selected';
@@ -297,9 +259,7 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
     return 'available';
   };
   
-  // Helper function to get seat styling - ENHANCED FOR SEAT TYPES
   const getSeatStyling = (seat, status) => {
-    // Base styling based on status
     let baseStyle;
     
     switch (status) {
@@ -313,7 +273,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
         baseStyle = 'bg-gray-200 text-gray-400 cursor-not-allowed';
         break;
       case 'available':
-        // For available seats, style depends on seat type
         if (seat.type === 'vip') {
           baseStyle = 'bg-yellow-50 border border-yellow-500 hover:bg-yellow-100 hover:border-yellow-600 text-yellow-800';
         } else if (seat.type === 'premium') {
@@ -358,7 +317,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
         </div>
       ) : (
         <>
-          {/* Stage/Screen indicator */}
           <div className="mb-6 sm:mb-8">
             <div className="bg-gradient-to-b from-gray-300 to-gray-400 text-white text-center py-2 sm:py-3 rounded-t-lg mx-auto max-w-2xl">
               <span className="text-xs sm:text-sm font-medium">STAGE / SCREEN</span>
@@ -405,7 +363,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
             </div>
           ))}
           
-          {/* Legend */}
           <div className="mt-6 flex flex-wrap gap-3 sm:gap-4 justify-center sm:justify-start bg-gray-50 p-3 sm:p-4 rounded-lg">
             <div className="flex items-center">
               <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white border border-gray-300 rounded mr-1.5 sm:mr-2"></div>
@@ -438,7 +395,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
             </div>
           </div>
           
-          {/* Selected Seats Summary */}
           {selectedSeats.length > 0 && (
             <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-primary-50 border border-primary-200 rounded-lg">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
@@ -482,8 +438,6 @@ const SeatSelector = ({ event, onSeatSelectionChange }) => {
               </div>
             </div>
           )}
-
-          {/* Mobile helper text */}
           <div className="mt-4 text-xs text-gray-500 text-center sm:hidden">
             <p>Swipe horizontally to see all seats</p>
           </div>

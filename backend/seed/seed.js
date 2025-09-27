@@ -5,10 +5,9 @@ import Event from "../models/event.models.js";
 
 config();
 
-// Sample event images (you can replace with actual event images)
 const eventImages = {
   concert: [
-    "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+    "https://images.unsplash.com/photo-1493225457104-a3eb161ffa5f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
     "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
   ],
   sports: [
@@ -16,7 +15,7 @@ const eventImages = {
     "https://images.unsplash.com/photo-1579952363873-27d3bfad9c0d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
   ],
   theater: [
-    "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
+    "https://images.unsplash.com/photo-1507676184210-d03ab07a01bf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
     "https://images.unsplash.com/photo-1514306191717-452ec28c7814?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
   ],
   conference: [
@@ -37,7 +36,6 @@ const eventImages = {
   ]
 };
 
-// Generate seat configuration
 const generateSeats = (sections) => {
   const seats = [];
   const rowLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -60,16 +58,13 @@ const generateSeats = (sections) => {
 
   return seats;
 };
-
-// Seed events for each category
 const seedEvents = [
-  // CONCERT EVENTS
   {
     title: "AR Rahman Live in Concert",
     description: "Experience the magic of Oscar-winning composer AR Rahman in a spectacular live concert featuring his greatest hits from Bollywood and international cinema. Join us for an unforgettable evening of music that has touched millions of hearts worldwide. The concert will feature a full orchestra, guest vocalists, and stunning visual effects that will transport you into the world of Rahman's mesmerizing compositions.",
     category: "concert",
-    startDate: new Date('2024-12-15T19:00:00'),
-    endDate: new Date('2024-12-15T22:00:00'),
+    startDate: new Date('2025-10-15T19:00:00'),
+    endDate: new Date('2025-10-16T22:00:00'),
     location: {
       name: "Jawaharlal Nehru Stadium",
       address: "Lodhi Road",
@@ -96,8 +91,8 @@ const seedEvents = [
     title: "Bollywood Nights - Arijit Singh Live",
     description: "Get ready for a mesmerizing evening with the voice of Bollywood, Arijit Singh. This exclusive concert will feature his most popular romantic ballads and chartbusters that have made him India's most beloved playback singer. Experience his soulful voice live with a complete band setup and special lighting effects.",
     category: "concert",
-    startDate: new Date('2024-12-20T20:00:00'),
-    endDate: new Date('2024-12-20T23:00:00'),
+    startDate: new Date('2025-10-20T20:00:00'),
+    endDate: new Date('2025-10-20T23:00:00'),
     location: {
       name: "NSCI Dome",
       address: "Worli Sports Club",
@@ -108,26 +103,25 @@ const seedEvents = [
     },
     imageUrl: eventImages.concert[1],
     galleryImages: [
-      "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+      "https://images.unsplash.com/photo-1516450360452-9310f5e86fc7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1493225457104-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
     ],
     seats: generateSeats([
       { name: "VIP", rows: 4, seatsPerRow: 15, price: 7500, type: "vip" },
       { name: "Premium", rows: 6, seatsPerRow: 20, price: 4500, type: "premium" },
-      { name: "General", rows: 12, seatsPerRow: 25, price: 2500, type: "standard" }
+      { name: "General", rows: 10, seatsPerRow: 25, price: 2500, type: "standard" }
     ]),
     tags: ["arijit-singh", "bollywood", "romantic", "live-music", "mumbai"],
     isFeatured: false,
     status: "published"
   },
 
-  // SPORTS EVENTS
   {
-    title: "Mumbai Indians vs Chennai Super Kings - IPL 2024",
+    title: "Mumbai Indians vs Chennai Super Kings - IPL 2025",
     description: "Witness the ultimate cricket rivalry as Mumbai Indians take on Chennai Super Kings at the iconic Wankhede Stadium. This high-octane IPL match promises thrilling cricket action with the biggest stars of the game. Experience the electric atmosphere with thousands of passionate fans cheering for their favorite teams. Don't miss this clash of titans in the world's most exciting T20 cricket league.",
     category: "sports",
-    startDate: new Date('2024-12-25T19:30:00'),
-    endDate: new Date('2024-12-25T23:00:00'),
+    startDate: new Date('2025-10-25T19:30:00'),
+    endDate: new Date('2025-10-25T23:00:00'),
     location: {
       name: "Wankhede Stadium",
       address: "Churchgate",
@@ -179,13 +173,12 @@ const seedEvents = [
     status: "published"
   },
 
-  // THEATER EVENTS
   {
     title: "Mughal-E-Azam - The Musical",
     description: "Witness the grandeur of the timeless classic 'Mughal-E-Azam' brought to life on stage in this spectacular musical production. This Broadway-style musical features elaborate costumes, stunning sets, live orchestra, and powerful performances that recreate the magic of the legendary love story of Prince Salim and Anarkali. A visual and auditory feast that combines Indian classical arts with contemporary theater.",
     category: "theater",
-    startDate: new Date('2024-12-18T19:30:00'),
-    endDate: new Date('2024-12-18T22:30:00'),
+    startDate: new Date('2025-10-18T19:30:00'),
+    endDate: new Date('2025-10-18T22:30:00'),
     location: {
       name: "NCPA Theatre",
       address: "Nariman Point",
@@ -213,8 +206,8 @@ const seedEvents = [
     title: "Shakespeare's Hamlet - Modern Adaptation",
     description: "Experience Shakespeare's greatest tragedy in a contemporary setting. This modern adaptation of Hamlet brings the classic tale of revenge, madness, and moral corruption to the Indian stage with a stellar cast and innovative direction. The production features modern staging techniques while preserving the poetic beauty of Shakespeare's original text.",
     category: "theater",
-    startDate: new Date('2025-01-10T19:00:00'),
-    endDate: new Date('2025-01-10T22:00:00'),
+    startDate: new Date('2026-01-10T19:00:00'),
+    endDate: new Date('2026-01-10T22:00:00'),
     location: {
       name: "Kamani Auditorium",
       address: "Copernicus Marg",
@@ -225,7 +218,7 @@ const seedEvents = [
     },
     imageUrl: eventImages.theater[1],
     galleryImages: [
-      "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1507676184210-d03ab07a01bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1514306191717-452ec28c7814?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
     ],
     seats: generateSeats([
@@ -238,13 +231,12 @@ const seedEvents = [
     status: "published"
   },
 
-  // CONFERENCE EVENTS
   {
-    title: "India Tech Summit 2024",
+    title: "India Tech Summit 2025",
     description: "Join India's largest technology conference featuring industry leaders, innovators, and entrepreneurs. The summit will cover emerging technologies like AI, blockchain, IoT, and sustainable tech solutions. Network with tech professionals, attend workshops, and discover the latest trends shaping India's digital future. Features keynote speakers from major tech companies, startup showcases, and interactive panel discussions.",
     category: "conference",
-    startDate: new Date('2024-12-28T09:00:00'),
-    endDate: new Date('2024-12-28T18:00:00'),
+    startDate: new Date('2025-10-28T09:00:00'),
+    endDate: new Date('2025-10-28T18:00:00'),
     location: {
       name: "India Expo Mart",
       address: "Knowledge Park",
@@ -271,8 +263,8 @@ const seedEvents = [
     title: "Healthcare Innovation Conference 2025",
     description: "A comprehensive conference focused on the future of healthcare in India. Featuring discussions on telemedicine, healthcare technology, medical innovations, and policy reforms. Connect with healthcare professionals, researchers, pharmaceutical companies, and health-tech startups. The conference includes case studies, research presentations, and networking sessions with industry experts.",
     category: "conference",
-    startDate: new Date('2025-01-15T10:00:00'),
-    endDate: new Date('2025-01-15T17:00:00'),
+    startDate: new Date('2025-11-15T10:00:00'),
+    endDate: new Date('2025-11-15T17:00:00'),
     location: {
       name: "Taj Palace Hotel",
       address: "Sardar Patel Marg",
@@ -283,11 +275,11 @@ const seedEvents = [
     },
     imageUrl: eventImages.conference[1],
     galleryImages: [
-      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1576091160399-110ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
     ],
     seats: generateSeats([
-      { name: "Executive", rows: 2, seatsPerRow: 12, price: 12000, type: "vip" },
+      { name: "Executive", rows: 2, seatsPerRow: 10, price: 10000, type: "vip" },
       { name: "Professional", rows: 4, seatsPerRow: 18, price: 6000, type: "premium" },
       { name: "Academic", rows: 6, seatsPerRow: 25, price: 3000, type: "standard" }
     ]),
@@ -296,7 +288,6 @@ const seedEvents = [
     status: "published"
   },
 
-  // EXHIBITION EVENTS
   {
     title: "Contemporary Indian Art Exhibition",
     description: "Explore the vibrant world of contemporary Indian art featuring works by renowned and emerging artists from across the country. This exhibition showcases diverse art forms including paintings, sculptures, installations, and digital art that reflect modern India's cultural narrative. Meet the artists, attend guided tours, and experience the evolution of Indian contemporary art.",
@@ -329,8 +320,8 @@ const seedEvents = [
     title: "Auto Expo India 2025",
     description: "The biggest automotive exhibition in India showcasing the latest cars, bikes, electric vehicles, and automotive technology. Experience test drives, concept cars, and launch events from major automotive brands. The expo features interactive displays, virtual reality experiences, and expert talks on the future of mobility in India.",
     category: "exhibition",
-    startDate: new Date('2025-02-01T10:00:00'),
-    endDate: new Date('2025-02-05T18:00:00'),
+    startDate: new Date('2026-02-01T10:00:00'),
+    endDate: new Date('2026-02-05T18:00:00'),
     location: {
       name: "Pragati Maidan",
       address: "Mathura Road",
@@ -353,13 +344,12 @@ const seedEvents = [
     status: "published"
   },
 
-  // WORKSHOP EVENTS
   {
     title: "Digital Photography Masterclass",
     description: "Master the art of digital photography in this comprehensive hands-on workshop. Learn professional techniques for portrait, landscape, and street photography. The workshop covers camera settings, composition rules, lighting techniques, and post-processing with industry-standard software. Includes practical shooting sessions and portfolio review by professional photographers.",
     category: "workshop",
-    startDate: new Date('2025-01-12T10:00:00'),
-    endDate: new Date('2025-01-12T17:00:00'),
+    startDate: new Date('2025-01-10T10:00:00'),
+    endDate: new Date('2025-01-10T17:00:00'),
     location: {
       name: "Creative Hub Mumbai",
       address: "Bandra Kurla Complex",
@@ -385,8 +375,8 @@ const seedEvents = [
     title: "Startup Business Plan Workshop",
     description: "Learn to create a winning business plan for your startup from industry experts and successful entrepreneurs. This intensive workshop covers market research, financial planning, pitch deck creation, and investor presentation skills. Includes one-on-one mentoring sessions, business plan templates, and networking with fellow entrepreneurs and investors.",
     category: "workshop",
-    startDate: new Date('2025-01-25T09:00:00'),
-    endDate: new Date('2025-01-25T18:00:00'),
+    startDate: new Date('2026-01-25T09:00:00'),
+    endDate: new Date('2026-01-25T18:00:00'),
     location: {
       name: "T-Hub",
       address: "IIIT-H Campus, Gachibowli",
@@ -401,7 +391,7 @@ const seedEvents = [
       "https://images.unsplash.com/photo-1559136555-9303baea8ebd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
     ],
     seats: generateSeats([
-      { name: "Entrepreneur Package", rows: 2, seatsPerRow: 15, price: 12000, type: "premium" },
+      { name: "Entrepreneur Package", rows: 2, seatsPerRow: 15, price: 10000, type: "premium" },
       { name: "Student Pass", rows: 3, seatsPerRow: 20, price: 6000, type: "standard" }
     ]),
     tags: ["startup", "business-plan", "entrepreneurship", "mentoring", "investor-pitch"],
@@ -409,19 +399,18 @@ const seedEvents = [
     status: "published"
   },
 
-  // OTHER EVENTS
   {
     title: "Diwali Food & Culture Festival",
     description: "Celebrate the festival of lights with a grand cultural and food festival featuring traditional Indian cuisine, cultural performances, and festive activities. Experience regional delicacies from across India, traditional dance and music performances, handicraft exhibitions, and family-friendly activities. Perfect for experiencing the rich cultural heritage of India during the most celebrated festival.",
     category: "other",
-    startDate: new Date('2025-02-10T16:00:00'),
-    endDate: new Date('2025-02-10T22:00:00'),
+    startDate: new Date('2025-10-05T16:00:00'),
+    endDate: new Date('2025-10-07T22:00:00'),
     location: {
       name: "Kingdom of Dreams",
       address: "Sector 29, Leisure City",
       city: "Gurgaon",
       state: "Haryana",
-      zipCode: "122001",
+      zipCode: "102001",
       country: "India"
     },
     imageUrl: eventImages.other[0],
@@ -442,8 +431,8 @@ const seedEvents = [
     title: "Yoga and Wellness Retreat",
     description: "Join this transformative yoga and wellness retreat focused on mental and physical well-being. The retreat includes guided yoga sessions, meditation workshops, ayurvedic consultations, healthy cooking classes, and wellness talks by certified practitioners. Experience inner peace and rejuvenation in a serene environment with like-minded individuals seeking holistic wellness.",
     category: "other",
-    startDate: new Date('2025-02-15T07:00:00'),
-    endDate: new Date('2025-02-16T18:00:00'),
+    startDate: new Date('2026-02-15T07:00:00'),
+    endDate: new Date('2026-02-16T18:00:00'),
     location: {
       name: "Art of Living Ashram",
       address: "Udayapura",
@@ -471,7 +460,6 @@ const seedDatabase = async () => {
   try {
     await connectDB();
 
-    // Get all users to assign as organizers
     const users = await User.find();
     
     if (users.length === 0) {
@@ -479,11 +467,9 @@ const seedDatabase = async () => {
       return;
     }
 
-    // Clear existing events
     await Event.deleteMany({});
     console.log("Old events deleted");
 
-    // Assign random organizers to events and calculate totals
     const eventsWithOrganizers = seedEvents.map((event) => {
       const randomUser = users[Math.floor(Math.random() * users.length)];
       const totalSeats = event.seats.length;
@@ -498,7 +484,6 @@ const seedDatabase = async () => {
       };
     });
 
-    // Insert events
     await Event.insertMany(eventsWithOrganizers);
     
     console.log("Database seeded successfully with events:");
@@ -516,5 +501,4 @@ const seedDatabase = async () => {
   }
 };
 
-// Call the function
 seedDatabase();

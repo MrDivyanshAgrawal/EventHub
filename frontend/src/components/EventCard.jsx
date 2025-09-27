@@ -4,22 +4,15 @@ import { format, parseISO } from 'date-fns';
 import { CalendarDaysIcon, MapPinIcon, TicketIcon, CurrencyRupeeIcon } from '@heroicons/react/24/outline';
 
 const EventCard = ({ event }) => {
-  // Safely handle date
   const eventDate = event.startDate ? parseISO(event.startDate) : new Date();
-  
-  // Calculate if event is sold out or has limited seats
   const totalSeats = event.totalSeats || 0;
   const availableSeats = event.availableSeats || 0;
   const availablePercentage = totalSeats > 0 
     ? (availableSeats / totalSeats) * 100 
     : 0;
-  
-  // Get lowest seat price if seats exist
   const lowestPrice = event.seats && event.seats.length > 0 
     ? Math.min(...event.seats.map(seat => seat.price || 0))
     : 0;
-
-  // Get location display text
   const locationText = event.location?.city || event.location?.name || 'Location TBA';
 
   return (
@@ -37,15 +30,11 @@ const EventCard = ({ event }) => {
             e.target.src = 'https://via.placeholder.com/400x250';
           }}
         />
-        
-        {/* Category badge */}
         <div className="absolute bottom-3 left-3">
           <span className="bg-primary-500 text-white px-2 py-1 rounded text-xs font-medium capitalize">
             {event.category || 'event'}
           </span>
         </div>
-        
-        {/* Status badges */}
         {event.status === 'draft' && (
           <div className="absolute top-3 right-3">
             <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">

@@ -9,7 +9,8 @@ import {
   ExclamationCircleIcon,
   CheckCircleIcon,
   ChevronDownIcon,
-  CurrencyRupeeIcon,
+  TicketIcon ,
+  MapPinIcon
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import Loader from "../components/Loader";
@@ -42,10 +43,8 @@ const EditEvent = () => {
     tags: [],
   });
 
-  // For managing temporary input for tags
   const [tagInput, setTagInput] = useState("");
 
-  // For managing image previews
   const [mainImagePreview, setMainImagePreview] = useState("");
   const [galleryPreviews, setGalleryPreviews] = useState([]);
 
@@ -60,7 +59,6 @@ const EditEvent = () => {
       const eventData = response.data.data || response.data;
       setEvent(eventData);
 
-      // Parse dates and format them for form inputs
       const startDate = new Date(eventData.startDate);
       const endDate = eventData.endDate
         ? new Date(eventData.endDate)
@@ -72,7 +70,6 @@ const EditEvent = () => {
       const formattedEndDate = endDate.toISOString().split("T")[0];
       const formattedEndTime = endDate.toTimeString().substring(0, 5);
 
-      // Set initial form data
       setFormData({
         title: eventData.title || "",
         description: eventData.description || "",
@@ -92,7 +89,6 @@ const EditEvent = () => {
         tags: eventData.tags || [],
       });
 
-      // Set image previews
       if (eventData.imageUrl) {
         setMainImagePreview(eventData.imageUrl);
       }
@@ -109,11 +105,9 @@ const EditEvent = () => {
     }
   };
 
-  // Handle basic form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Handle nested location fields
     if (name.startsWith("location.")) {
       const locationField = name.split(".")[1];
       setFormData({
@@ -131,12 +125,10 @@ const EditEvent = () => {
     }
   };
 
-  // Handle image uploads
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
@@ -157,7 +149,6 @@ const EditEvent = () => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Limit to 10 gallery images
     if (galleryPreviews.length + files.length > 10) {
       toast.error('You can upload a maximum of 10 gallery images');
       return;
@@ -188,15 +179,12 @@ const EditEvent = () => {
   };
 
   const removeGalleryImage = (index) => {
-    // Check if it's an existing image from the server or a new upload
     const isNewUpload = galleryPreviews[index].startsWith("data:");
 
-    // Remove from preview
     const newPreviews = [...galleryPreviews];
     newPreviews.splice(index, 1);
     setGalleryPreviews(newPreviews);
 
-    // If it's a new upload, also remove from formData
     if (isNewUpload) {
       const newGalleryImages = [...formData.galleryImagesBase64];
       const indexInNewUploads = formData.galleryImagesBase64.findIndex(
@@ -211,17 +199,13 @@ const EditEvent = () => {
         });
       }
     } else {
-      // It's an existing image from the server
-      // In a real app, you'd track which existing images to delete
-      // For this example, we'll just update the UI
+      toast.info("Image removed from display. Changes will be saved when you update the event.");
     }
   };
 
-  // Handle tag management
   const addTag = () => {
     if (!tagInput.trim()) return;
 
-    // Don't add duplicate tags
     if (formData.tags.includes(tagInput.trim())) {
       setTagInput("");
       return;
@@ -241,9 +225,7 @@ const EditEvent = () => {
     });
   };
 
-  // Handle form submission
   const handleSubmit = async () => {
-    // Validate form
     if (
       !formData.title ||
       !formData.description ||
@@ -275,14 +257,13 @@ const EditEvent = () => {
     setSaving(true);
 
     try {
-      // Prepare dates for submission - combine date and time
       const startDateTime = new Date(
         `${formData.startDate}T${formData.startTime}`
       );
       const endDateTime =
         formData.endDate && formData.endTime
           ? new Date(`${formData.endDate}T${formData.endTime}`)
-          : new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000); // Default to 2 hours after start
+          : new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000); 
 
       const eventUpdateData = {
         ...formData,
@@ -290,12 +271,10 @@ const EditEvent = () => {
         endDate: endDateTime.toISOString(),
       };
 
-      // If we didn't change the main image, don't include imageBase64
       if (!formData.imageBase64) {
         delete eventUpdateData.imageBase64;
       }
 
-      // Only include galleryImagesBase64 if we have new uploads
       if (
         !eventUpdateData.galleryImagesBase64 ||
         eventUpdateData.galleryImagesBase64.length === 0
@@ -303,14 +282,11 @@ const EditEvent = () => {
         delete eventUpdateData.galleryImagesBase64;
       }
 
-      // Update the event
       const response = await eventService.updateEvent(id, eventUpdateData);
 
-      // Update local state with new data
       setEvent(response.data.data || response.data);
       toast.success("Event updated successfully!");
 
-      // Redirect to event details
       navigate(`/events/${id}`);
     } catch (error) {
       console.error("Error updating event:", error);
@@ -320,7 +296,6 @@ const EditEvent = () => {
     }
   };
 
-  // Handle publishing the event
   const handlePublish = async () => {
     if (event.status === EVENT_STATUS.PUBLISHED) {
       toast.info("Event is already published");
@@ -339,8 +314,6 @@ const EditEvent = () => {
 
     try {
       await eventService.publishEvent(id);
-
-      // Update local state
       setEvent({
         ...event,
         status: EVENT_STATUS.PUBLISHED,
@@ -375,12 +348,10 @@ const EditEvent = () => {
       </div>
     );
 
-  // Check if user can edit the event
   const isPastEvent = new Date(event.startDate) < new Date();
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <button
@@ -394,8 +365,6 @@ const EditEvent = () => {
             Edit Event
           </h1>
         </div>
-
-        {/* Event status */}
         <div className="flex flex-wrap gap-2">
           <span
             className={`px-3 py-1 text-sm font-medium rounded-full ${
@@ -421,7 +390,6 @@ const EditEvent = () => {
         </div>
       </div>
 
-      {/* Warning for past events */}
       {isPastEvent && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
           <div className="flex">
@@ -436,7 +404,6 @@ const EditEvent = () => {
         </div>
       )}
 
-      {/* Form */}
       <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-8">
         <div className="space-y-8">
           <div className="space-y-6">
@@ -504,7 +471,6 @@ const EditEvent = () => {
                   <ChevronDownIcon className="h-4 w-4 text-gray-400" />
                 </div>
                 
-                {/* Category icon display when selected */}
                 {formData.category && (
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
                     {EVENT_CATEGORIES.find(c => c.value === formData.category)?.icon}
@@ -721,15 +687,19 @@ const EditEvent = () => {
                 >
                   PIN Code *
                 </label>
-                <input
-                  id="location.zipCode"
-                  name="location.zipCode"
-                  type="text"
-                  value={formData.location.zipCode}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                  placeholder="e.g., 110001"
-                />
+                <div className="relative">
+                  <input
+                    id="location.zipCode"
+                    name="location.zipCode"
+                    type="text"
+                    value={formData.location.zipCode}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 pl-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                    placeholder="e.g., 110001"
+                  />
+                  <MapPinIcon className="h-4 w-4 text-gray-400 absolute left-2 top-1/2 transform -translate-y-1/2" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Indian PIN Code</p>
               </div>
 
               <div>
@@ -875,9 +845,9 @@ const EditEvent = () => {
             )}
           </div>
 
-          {/* Seat management notice */}
           <div className="border-t pt-8">
-            <h2 className="text-xl font-semibold mb-4">
+            <h2 className="text-xl font-semibold mb-4 flex items-center">
+              <TicketIcon  className="h-6 w-6 mr-2 text-primary-600" />
               Seating Configuration
             </h2>
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
@@ -900,7 +870,6 @@ const EditEvent = () => {
         </div>
       </div>
 
-      {/* Action buttons */}
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <button
           type="button"

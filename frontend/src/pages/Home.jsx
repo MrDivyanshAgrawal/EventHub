@@ -14,7 +14,7 @@ import {
 const Home = () => {
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth(); // Get user from auth context
+  const { user } = useAuth(); 
 
   useEffect(() => {
     fetchFeaturedEvents();
@@ -33,7 +33,6 @@ const Home = () => {
 
   return (
     <div>
-      {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary-600 to-primary-800 text-white">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-24">
@@ -57,7 +56,6 @@ const Home = () => {
           </div>
         </div>
         
-        {/* Wave SVG */}
         <div className="absolute bottom-0 left-0 right-0 w-full overflow-hidden">
           <svg className="w-full" viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
             <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="#f9fafb"/>
@@ -65,7 +63,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="py-12 sm:py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
@@ -135,7 +132,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Call-to-action Section */}
       <section className="bg-primary-600 text-white py-12 sm:py-16">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center gap-2 mb-4">
@@ -168,7 +164,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Popular Cities Section */}
       <section className="py-12 sm:py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-10 text-gray-900">

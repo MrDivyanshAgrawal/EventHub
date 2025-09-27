@@ -27,13 +27,10 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     setLoading(true);
     try {
-      // Check if there's a token/cookie first
       const response = await authService.getProfile();
       
-      // Debug the response to see its structure
       console.log('Auth response structure:', response);
       
-      // Handle different response structures
       if (response && response.success === true && response.user) {
         setUser(response.user);
       } else if (response && response.data) {
@@ -41,20 +38,15 @@ export const AuthProvider = ({ children }) => {
       } else if (response && response._id) {
         setUser(response);
       } else if (response) {
-        // If response exists but doesn't match known patterns
         setUser(response);
       }
     } catch (error) {
-      // Don't show error toast on initial load
       console.log('Auth check failed:', error);
-      // Clear user data on auth failure
       setUser(null);
       
-      // Check if it's a 401 - expected for not logged in
       if (error.response && error.response.status === 401) {
         console.log('User not authenticated, this is normal if not logged in');
       } else {
-        // Only log unexpected errors
         console.error('Unexpected auth error:', error);
       }
     } finally {
@@ -66,16 +58,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.signup(data);
       
-      // Debug the response format
       console.log('Signup response structure:', response);
       
-      // Handle different response structures
       if (response && response.success === true && response.user) {
         setUser(response.user);
       } else if (response && response._id) {
         setUser(response);
       } else {
-        // If response exists but doesn't match known patterns
         setUser(response);
       }
       
@@ -91,16 +80,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(data);
       
-      // Debug the response format
       console.log('Login response structure:', response);
       
-      // Handle different response structures
       if (response && response.success === true && response.user) {
         setUser(response.user);
       } else if (response && response._id) {
         setUser(response);
       } else {
-        // If response exists but doesn't match known patterns
         setUser(response);
       }
       
@@ -118,7 +104,6 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       toast.success('Logged out successfully');
     } catch (error) {
-      // Even if logout fails on server, clear local state
       console.error('Logout error:', error);
       setUser(null);
       throw error;

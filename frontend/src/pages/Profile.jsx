@@ -1,4 +1,3 @@
-// src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -40,8 +39,7 @@ const Profile = () => {
     const file = e.target.files[0];
     if (file) {
       setUploading(true);
-      
-      // Preview the image
+    
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -61,7 +59,7 @@ const Profile = () => {
     
     try {
       await authService.updateProfile(formData);
-      await checkAuth(); // Refresh user data
+      await checkAuth();
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -73,7 +71,6 @@ const Profile = () => {
 
   return (
     <div className="bg-white min-h-[calc(100vh-4rem)]">
-      {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="text-center">
@@ -85,11 +82,9 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Profile Form */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white p-6 sm:p-8 rounded-lg shadow-sm border border-gray-200">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Profile Image */}
             <div className="text-center">
               <div className="relative inline-block">
                 <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-primary-100 bg-gray-100 mx-auto">
@@ -125,8 +120,7 @@ const Profile = () => {
                 </label>
               </div>
             </div>
-            
-            {/* Name */}
+          
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name
@@ -142,7 +136,6 @@ const Profile = () => {
               />
             </div>
             
-            {/* Email (read-only) */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email Address
@@ -158,7 +151,6 @@ const Profile = () => {
               <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
             </div>
 
-            {/* Role (read-only) */}
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                 Account Type
@@ -173,7 +165,6 @@ const Profile = () => {
               />
             </div>
             
-            {/* Submit Button */}
             <div className="flex justify-end pt-4">
               <button
                 type="submit"

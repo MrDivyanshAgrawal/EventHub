@@ -11,7 +11,6 @@ import { bookingService, paymentService, eventService } from "../services/auth";
 import toast from "react-hot-toast";
 import { ArrowLeftIcon, CurrencyRupeeIcon } from "@heroicons/react/24/outline";
 
-// Load Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const CheckoutForm = ({ selectedSeats, event, eventId }) => {
@@ -24,12 +23,9 @@ const CheckoutForm = ({ selectedSeats, event, eventId }) => {
   const totalAmount = selectedSeats.reduce((sum, seat) => sum + seat.price, 0);
 
   useEffect(() => {
-    // Create payment intent when component mounts
     createPaymentIntent();
 
-    // Cleanup function to release seats when component unmounts
     return () => {
-      // Only release seats if not in processing state (payment not in progress)
       if (!isProcessing && selectedSeats && selectedSeats.length > 0) {
         console.log("Cleanup: Releasing seats on unmount");
         selectedSeats.forEach((seat) => {
@@ -55,15 +51,11 @@ const CheckoutForm = ({ selectedSeats, event, eventId }) => {
       console.error("Error creating payment intent:", error);
       toast.error("Failed to initialize payment");
 
-      // If we can't create a payment intent, release the seats
       await releaseSeatsOnFailure();
     }
   };
-
-  // Handle payment failure - add this function
   const releaseSeatsOnFailure = async () => {
     try {
-      // Release all selected seats
       for (const seat of selectedSeats) {
         await eventService.releaseSeat(eventId, seat._id);
         console.log(`Released seat ${seat._id} due to payment failure`);
@@ -83,7 +75,6 @@ const CheckoutForm = ({ selectedSeats, event, eventId }) => {
     setIsProcessing(true);
 
     try {
-      // Confirm the payment
       const { error, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
         {
@@ -101,11 +92,10 @@ const CheckoutForm = ({ selectedSeats, event, eventId }) => {
       }
 
       if (paymentIntent.status === "succeeded") {
-        // Create booking with payment intent ID
         const bookingData = {
           eventId: eventId,
           selectedSeats: selectedSeats.map((seat) => seat._id),
-          paymentId: paymentIntent.id, // Add the payment intent ID
+          paymentId: paymentIntent.id,
         };
 
         console.log("Sending booking data:", bookingData);
@@ -201,7 +191,6 @@ const Checkout = () => {
   const { selectedSeats, event } = location.state || {};
 
   useEffect(() => {
-    // If no seats or event, navigate back to events
     if (!selectedSeats || !event) {
       navigate("/events");
     }

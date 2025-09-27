@@ -40,40 +40,31 @@ const EventDetails = () => {
     fetchEvent();
   }, [id]);
 
-  // Listen for real-time seat updates
   useEffect(() => {
     if (!event) return;
 
-    // Join the event room for real-time updates
     socketService.joinEvent(event._id);
 
-    // Listen for when seats are selected by others
     const handleSeatSelectedByOther = ({ seatId, userId }) => {
       if (userId !== user?._id) {
         console.log(`Seat ${seatId} temporarily selected by another user`);
-        // Temporarily reduce available count
         setAvailableSeatsCount(prev => Math.max(0, prev - 1));
       }
     };
 
-    // Listen for when seats are released by others
     const handleSeatReleasedByOther = ({ seatId, userId }) => {
       if (userId !== user?._id) {
         console.log(`Seat ${seatId} released by another user`);
-        // Increase available count
         setAvailableSeatsCount(prev => Math.min(event.totalSeats, prev + 1));
       }
     };
 
-    // Listen for seat bookings
     const handleSeatsBooked = ({ seats: bookedSeatIds }) => {
       console.log('Seats booked notification received:', bookedSeatIds);
       
-      // Update the available seats count
       const bookedCount = bookedSeatIds.length;
       setAvailableSeatsCount(prev => Math.max(0, prev - bookedCount));
       
-      // Update event object
       setEvent(prev => ({
         ...prev,
         availableSeats: Math.max(0, prev.availableSeats - bookedCount),
@@ -83,15 +74,12 @@ const EventDetails = () => {
       }));
     };
 
-    // Listen for seat releases (e.g., from cancelled bookings)
     const handleSeatsReleased = ({ seats: releasedSeatIds }) => {
       console.log('Seats released notification received:', releasedSeatIds);
       
-      // Update the available seats count
       const releasedCount = releasedSeatIds.length;
       setAvailableSeatsCount(prev => Math.min(event.totalSeats, prev + releasedCount));
       
-      // Update event object
       setEvent(prev => ({
         ...prev,
         availableSeats: Math.min(prev.totalSeats, prev.availableSeats + releasedCount),
@@ -105,7 +93,6 @@ const EventDetails = () => {
     socketService.onSeatReleased(handleSeatReleasedByOther);
     socketService.onSeatsBooked(handleSeatsBooked);
     
-    // Add listener for seatsReleased event (when bookings are cancelled)
     if (socketService.socket) {
       socketService.socket.on('seatsReleased', handleSeatsReleased);
     }
@@ -128,15 +115,12 @@ const EventDetails = () => {
       const eventData = response.data.data || response.data;
       
       if (eventData) {
-        // Calculate actual available seats from seat data
         let actualAvailableSeats = 0;
         if (eventData.seats && eventData.seats.length > 0) {
           actualAvailableSeats = eventData.seats.filter(seat => seat.isAvailable).length;
         } else {
           actualAvailableSeats = eventData.availableSeats || 0;
         }
-        
-        // Ensure counts are valid
         actualAvailableSeats = Math.max(0, Math.min(actualAvailableSeats, eventData.totalSeats));
         
         eventData.availableSeats = actualAvailableSeats;
@@ -160,7 +144,6 @@ const EventDetails = () => {
       const eventData = response.data.data || response.data;
       
       if (eventData) {
-        // Calculate actual available seats from seat data
         let actualAvailableSeats = 0;
         if (eventData.seats && eventData.seats.length > 0) {
           actualAvailableSeats = eventData.seats.filter(seat => seat.isAvailable).length;
@@ -186,10 +169,8 @@ const EventDetails = () => {
   const handleSeatSelectionChange = (seats) => {
     setSelectedSeats(seats);
     
-    // Update available seats count based on selection changes
     if (event && event.seats) {
       const actualAvailableSeats = event.seats.filter(seat => {
-        // A seat is available if it's marked as available AND not selected by current user
         return seat.isAvailable && !seats.some(s => s._id === seat._id);
       }).length;
       setAvailableSeatsCount(actualAvailableSeats);
@@ -207,7 +188,6 @@ const EventDetails = () => {
       return;
     }
 
-    // Set flag to prevent seat release during navigation
     setIsNavigatingToCheckout(true);
     
     navigate(`/checkout/${id}`, { 
@@ -225,7 +205,6 @@ const EventDetails = () => {
 
   useEffect(() => {
     return () => {
-      // Cleanup function to release seats when component unmounts
       if (selectedSeats && selectedSeats.length > 0 && !isNavigatingToCheckout && event) {
         console.log('EventDetails cleanup: releasing selected seats');
         selectedSeats.forEach(seat => {
@@ -237,7 +216,6 @@ const EventDetails = () => {
   }, [selectedSeats, event, isNavigatingToCheckout]);
   
   const handleShare = async () => {
-    // Use Web Share API if available
     if (navigator.share) {
       try {
         await navigator.share({
@@ -247,13 +225,11 @@ const EventDetails = () => {
         });
       } catch (error) {
         if (error.name !== 'AbortError') {
-          // Copy to clipboard as fallback
           navigator.clipboard.writeText(window.location.href);
           toast.success('Link copied to clipboard!');
         }
       }
     } else {
-      // If Web Share API is not available, copy to clipboard
       navigator.clipboard.writeText(window.location.href);
       toast.success('Link copied to clipboard!');
     }
@@ -281,18 +257,15 @@ const EventDetails = () => {
     </div>
   );
 
-  // Parse dates safely
   const startDate = parseISO(event.startDate);
   const endDate = event.endDate ? parseISO(event.endDate) : null;
   const isPastEvent = startDate < new Date();
   
-  // Determine if the event has multiple days
   const isMultiDayEvent = endDate && 
     format(startDate, 'yyyy-MM-dd') !== format(endDate, 'yyyy-MM-dd');
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Image */}
       <div className="relative h-48 sm:h-64 md:h-96">
         <img 
           src={
@@ -305,7 +278,6 @@ const EventDetails = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         
-        {/* Back button */}
         <button
           onClick={() => navigate(-1)}
           className="absolute top-4 left-4 bg-white/90 backdrop-blur p-2 rounded-full hover:bg-white transition-colors z-10"
@@ -314,7 +286,6 @@ const EventDetails = () => {
           <ArrowLeftIcon className="h-5 w-5" />
         </button>
 
-        {/* Action buttons */}
         <div className="absolute top-4 right-4 flex gap-2 z-10">
           <button
             onClick={() => setIsFavorite(!isFavorite)}
@@ -336,7 +307,6 @@ const EventDetails = () => {
           </button>
         </div>
 
-        {/* Category badge */}
         <div className="absolute bottom-4 left-4">
           <span className="bg-primary-600 text-white px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium capitalize">
             {event.category}
@@ -344,7 +314,6 @@ const EventDetails = () => {
         </div>
       </div>
 
-      {/* Gallery thumbnails if available */}
       {event.galleryImages && event.galleryImages.length > 1 && (
         <div className="bg-gray-900 p-2 flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-600 gap-2">
           <img
@@ -369,9 +338,7 @@ const EventDetails = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-            {/* Title and Basic Info */}
             <div>
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{event.title}</h1>
               
@@ -395,7 +362,6 @@ const EventDetails = () => {
                 </div>
               </div>
 
-              {/* Organizer Info */}
               <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                 <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <UserIcon className="h-5 w-5 text-primary-600" />
@@ -406,8 +372,6 @@ const EventDetails = () => {
                 </div>
               </div>
             </div>
-
-            {/* Status Alert */}
             {event.status !== 'published' && (
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
                 <div className="flex">
@@ -420,8 +384,6 @@ const EventDetails = () => {
                 </div>
               </div>
             )}
-
-            {/* Description */}
             <div className="prose max-w-none">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">About This Event</h2>
               <div className="text-gray-600 whitespace-pre-line text-sm sm:text-base">
@@ -429,7 +391,6 @@ const EventDetails = () => {
               </div>
             </div>
             
-            {/* Event tags if available */}
             {event.tags && event.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 items-center">
                 <TagIcon className="h-5 w-5 text-gray-500" />
@@ -444,7 +405,6 @@ const EventDetails = () => {
               </div>
             )}
 
-            {/* Venue Information */}
             <div>
               <h2 className="text-lg sm:text-xl font-semibold mb-4">Venue</h2>
               <div className="bg-gray-50 p-4 rounded-lg">
@@ -457,7 +417,6 @@ const EventDetails = () => {
               </div>
             </div>
 
-            {/* Seat Selection */}
             {!isPastEvent && event.seats && event.seats.length > 0 && (
               <SeatSelector 
                 event={event} 
@@ -466,7 +425,6 @@ const EventDetails = () => {
             )}
           </div>
 
-          {/* Sidebar - Booking Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 lg:sticky lg:top-20">
               <div className="flex justify-between items-center mb-4">

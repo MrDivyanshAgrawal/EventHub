@@ -20,7 +20,7 @@ import toast from 'react-hot-toast';
 const CreateEvent = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: Basic Info, 2: Location, 3: Seating, 4: Images
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -42,15 +42,11 @@ const CreateEvent = () => {
     seats: [],
     tags: []
   });
-
-  // For managing temporary input for tags
   const [tagInput, setTagInput] = useState('');
   
-  // For managing image previews
   const [mainImagePreview, setMainImagePreview] = useState('');
   const [galleryPreviews, setGalleryPreviews] = useState([]);
 
-  // For managing seat creation
   const [seatSection, setSeatSection] = useState('');
   const [seatRows, setSeatRows] = useState('');
   const [seatsPerRow, setSeatsPerRow] = useState('');
@@ -58,7 +54,6 @@ const CreateEvent = () => {
   const [seatPrice, setSeatPrice] = useState('');
   const [sections, setSections] = useState([]);
 
-  // Step details for progress tracking
   const steps = [
     { id: 1, name: 'Basic Info', icon: '📝' },
     { id: 2, name: 'Location', icon: '📍' },
@@ -66,11 +61,10 @@ const CreateEvent = () => {
     { id: 4, name: 'Images', icon: '🖼️' }
   ];
 
-  // Handle basic form changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Handle nested location fields
+
     if (name.startsWith('location.')) {
       const locationField = name.split('.')[1];
       setFormData({
@@ -88,12 +82,11 @@ const CreateEvent = () => {
     }
   };
 
-  // Handle image uploads
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check file size (5MB limit)
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
@@ -113,7 +106,6 @@ const CreateEvent = () => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Limit to 10 gallery images
     if (galleryPreviews.length + files.length > 10) {
       toast.error('You can upload a maximum of 10 gallery images');
       return;
@@ -157,17 +149,16 @@ const CreateEvent = () => {
     setGalleryPreviews(newPreviews);
   };
 
-  // Handle tag management
   const addTag = () => {
     if (!tagInput.trim()) return;
     
-    // Limit tags
+
     if (formData.tags.length >= 10) {
       toast.error('Maximum 10 tags allowed');
       return;
     }
     
-    // Don't add duplicate tags
+
     if (formData.tags.includes(tagInput.trim())) {
       toast.error('Tag already exists');
       setTagInput('');
@@ -188,20 +179,19 @@ const CreateEvent = () => {
     });
   };
 
-  // Handle seat section creation
   const addSeatSection = () => {
-    // Validation
+
     if (!seatSection || !seatRows || !seatsPerRow || !seatPrice) {
       toast.error('Please fill all seat section fields');
       return;
     }
 
-    // Convert to numbers
+
     const numRows = parseInt(seatRows);
     const numSeatsPerRow = parseInt(seatsPerRow);
     const pricePerSeat = parseFloat(seatPrice);
 
-    // Additional validation
+
     if (numRows <= 0 || numRows > 26) {
       toast.error('Number of rows must be between 1 and 26');
       return;
@@ -217,13 +207,11 @@ const CreateEvent = () => {
       return;
     }
 
-    // Check for duplicate section names
     if (sections.some(s => s.name.toLowerCase() === seatSection.toLowerCase())) {
       toast.error('A section with this name already exists');
       return;
     }
 
-    // Generate seats for this section
     const newSeats = [];
     const rowLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -242,13 +230,10 @@ const CreateEvent = () => {
       }
     }
 
-    // Add seats to form data
     setFormData({
       ...formData,
       seats: [...formData.seats, ...newSeats]
     });
-
-    // Add section to list of sections for display
     setSections([
       ...sections,
       {
@@ -260,8 +245,6 @@ const CreateEvent = () => {
         type: seatType
       }
     ]);
-
-    // Reset seat form
     setSeatSection('');
     setSeatRows('');
     setSeatsPerRow('');
@@ -272,28 +255,23 @@ const CreateEvent = () => {
   };
 
   const removeSeatSection = (sectionName) => {
-    // Remove seats for this section
     setFormData({
       ...formData,
       seats: formData.seats.filter(seat => seat.section !== sectionName)
     });
 
-    // Remove section from list
     setSections(sections.filter(section => section.name !== sectionName));
 
     toast.success(`Removed section ${sectionName}`);
   };
 
-  // Navigate between steps
   const nextStep = () => {
-    // Validate current step before proceeding
     if (step === 1) {
       if (!formData.title || !formData.description || !formData.category || !formData.startDate || !formData.startTime) {
         toast.error('Please fill all required fields');
         return;
       }
       
-      // Validate dates
       const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
       if (startDateTime < new Date()) {
         toast.error('Event start date must be in the future');
@@ -328,8 +306,6 @@ const CreateEvent = () => {
     window.scrollTo(0, 0);
     setStep(step - 1);
   };
-
-  // Handle form submission
   const handleSubmit = async () => {
     if (!formData.imageBase64) {
       toast.error('Please upload a main event image');
@@ -339,12 +315,10 @@ const CreateEvent = () => {
     setLoading(true);
 
     try {
-      // Prepare dates for submission - combine date and time
       const startDateTime = new Date(`${formData.startDate}T${formData.startTime}`);
       const endDateTime = formData.endDate && formData.endTime
         ? new Date(`${formData.endDate}T${formData.endTime}`)
-        : new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000); // Default to 2 hours after start
-
+        : new Date(startDateTime.getTime() + 2 * 60 * 60 * 1000); 
       const eventData = {
         ...formData,
         startDate: startDateTime.toISOString(),
@@ -353,7 +327,6 @@ const CreateEvent = () => {
         availableSeats: formData.seats.length
       };
 
-      // Submit the event
       const response = await eventService.createEvent(eventData);
       
       toast.success('Event created successfully!');
@@ -366,11 +339,9 @@ const CreateEvent = () => {
     }
   };
 
-  // Progress bar component
   const ProgressBar = () => {
     return (
       <div className="mb-8">
-        {/* Desktop Progress */}
         <div className="hidden sm:flex items-center justify-between">
           {steps.map((stepItem, index) => {
             const isActive = stepItem.id === step;
@@ -414,7 +385,6 @@ const CreateEvent = () => {
           })}
         </div>
 
-        {/* Mobile Progress */}
         <div className="sm:hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">
@@ -435,7 +405,6 @@ const CreateEvent = () => {
     );
   };
 
-  // Render different steps
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -503,7 +472,6 @@ const CreateEvent = () => {
                   <ChevronDownIcon className="h-4 w-4 text-gray-400" />
                 </div>
                 
-                {/* Category icon display when selected */}
                 {formData.category && (
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg pointer-events-none">
                     {EVENT_CATEGORIES.find(c => c.value === formData.category)?.icon}
@@ -847,8 +815,6 @@ const CreateEvent = () => {
                   </button>
                 </div>
               </div>
-              
-              {/* Preview calculation */}
               {seatSection && seatRows && seatsPerRow && seatPrice && (
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                   <p className="text-sm text-blue-800">
@@ -1071,7 +1037,6 @@ const CreateEvent = () => {
               </div>
             </div>
 
-            {/* Summary Section */}
             <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
               <h3 className="font-medium text-gray-900 mb-4">Event Summary</h3>
               <dl className="space-y-2 text-sm">
@@ -1116,7 +1081,6 @@ const CreateEvent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <button
             onClick={() => navigate(-1)}
@@ -1129,15 +1093,12 @@ const CreateEvent = () => {
           <p className="text-gray-600 mt-1">Fill in the details to create your event</p>
         </div>
         
-        {/* Progress Bar */}
         <ProgressBar />
         
-        {/* Form */}
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
           {renderStep()}
         </div>
         
-        {/* Navigation buttons */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <button
             type="button"
@@ -1194,7 +1155,6 @@ const CreateEvent = () => {
           )}
         </div>
 
-        {/* Help Text */}
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
             Need help? <a href="/contact" className="text-primary-600 hover:text-primary-700 font-medium">Contact support</a>

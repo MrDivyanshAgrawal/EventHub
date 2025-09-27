@@ -5,7 +5,6 @@ import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 const Terms = () => {
   return (
     <div className="bg-white">
-      {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
           <div className="text-center">
@@ -17,7 +16,6 @@ const Terms = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="prose prose-sm sm:prose lg:prose-lg prose-primary max-w-none">
           <div className="flex items-center mb-6 sm:mb-8">

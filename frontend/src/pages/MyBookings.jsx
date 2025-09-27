@@ -32,26 +32,21 @@ const MyBookings = () => {
   useEffect(() => {
     fetchBookings();
   }, []);
-
-  // Check for updates to pending bookings
   useEffect(() => {
     const hasPendingBookings = bookings.some(b => b.status === 'pending');
     
     if (hasPendingBookings) {
-      const intervalId = setInterval(checkPendingBookings, 30000); // Check every 30 seconds
+      const intervalId = setInterval(checkPendingBookings, 30000);
       return () => clearInterval(intervalId);
     }
   }, [bookings]);
 
-  // Add this function for a complete refresh
   const forceRefreshBookings = async () => {
     try {
       setLoading(true);
-      // Clear cache by invalidating the URL with a timestamp
       const timestamp = new Date().getTime();
       const response = await bookingService.getUserBookings({ _t: timestamp });
       
-      // Extract and process bookings as in fetchBookings
       let bookingsData = [];
       if (response.data && Array.isArray(response.data)) {
         bookingsData = response.data;
@@ -61,7 +56,6 @@ const MyBookings = () => {
         throw new Error('Unexpected data format');
       }
       
-      // Filter out bookings where event doesn't exist
       const validBookings = bookingsData.filter(booking => {
         if (!booking.event) {
           console.warn(`Booking ${booking._id} has no event data - filtering out`);
@@ -70,14 +64,12 @@ const MyBookings = () => {
         return true;
       });
       
-      // Log each booking for debugging
       validBookings.forEach(booking => {
         console.log(`Refreshed booking ${booking._id}: status = ${booking.status}`);
       });
       
       setBookings(validBookings);
       
-      // Generate QR codes for confirmed bookings with ticket codes
       const codes = {};
       for (const booking of validBookings) {
         if (booking.ticketCode && booking.status === 'confirmed') {
@@ -104,7 +96,6 @@ const MyBookings = () => {
       const response = await bookingService.getUserBookings();
       console.log('Bookings response:', response);
       
-      // Check the structure of the response and extract bookings
       let bookingsData = [];
       if (response.data && Array.isArray(response.data)) {
         bookingsData = response.data;
@@ -117,7 +108,6 @@ const MyBookings = () => {
         return;
       }
       
-      // Filter out bookings where event doesn't exist
       const validBookings = bookingsData.filter(booking => {
         if (!booking.event) {
           console.warn(`Booking ${booking._id} has no event data - filtering out`);
@@ -126,14 +116,12 @@ const MyBookings = () => {
         return true;
       });
       
-      // Log each booking's status to debug
       validBookings.forEach(booking => {
         console.log(`Booking ${booking._id}: status = ${booking.status}, payment = ${booking.paymentStatus}`);
       });
       
       setBookings(validBookings);
       
-      // Generate QR codes for confirmed bookings with ticket codes
       const codes = {};
       for (const booking of validBookings) {
         if (booking.ticketCode && booking.status === 'confirmed') {
@@ -156,22 +144,18 @@ const MyBookings = () => {
 
   const checkPendingBookings = async () => {
     try {
-      // Find any pending bookings
       const pendingBookings = bookings.filter(b => b.status === 'pending');
       
       if (pendingBookings.length === 0) return;
       
-      // Check if any of them have been updated
       const refreshedResponse = await bookingService.getUserBookings();
       const refreshedData = Array.isArray(refreshedResponse.data) ? refreshedResponse.data : 
                            (refreshedResponse.data?.data || []);
       
-      // Filter out bookings with no event
       const validBookings = refreshedData.filter(booking => booking.event != null);
       
       setBookings(validBookings);
       
-      // Generate QR codes for any newly confirmed bookings
       const updatedQrCodes = { ...qrCodes };
       for (const booking of validBookings) {
         if (booking.ticketCode && booking.status === 'confirmed' && !qrCodes[booking._id]) {
@@ -189,7 +173,6 @@ const MyBookings = () => {
     }
   };
 
-  // Fixed handleRefresh function that uses setRefreshing
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
@@ -202,7 +185,6 @@ const MyBookings = () => {
     }
   };
 
-  // Updated handleCancelBooking function
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
 
@@ -211,7 +193,6 @@ const MyBookings = () => {
       const response = await bookingService.cancelBooking(bookingId);
       toast.success('Booking cancelled successfully');
       
-      // Directly update state for immediate UI feedback
       setBookings(prevBookings => 
         prevBookings.map(booking => 
           booking._id === bookingId 
@@ -220,12 +201,9 @@ const MyBookings = () => {
         )
       );
       
-      // If we have a selected booking that's being cancelled, update its status too
       if (selectedBooking && selectedBooking._id === bookingId) {
         setSelectedBooking(prev => ({ ...prev, status: 'cancelled' }));
       }
-      
-      // Force a complete refresh after a short delay to ensure we have the latest data
       setTimeout(() => {
         forceRefreshBookings();
       }, 1000);
@@ -233,7 +211,6 @@ const MyBookings = () => {
       console.error('Error cancelling booking:', error);
       toast.error(error.response?.data?.message || 'Failed to cancel booking');
       
-      // Still try to refresh to ensure UI is in sync with backend
       forceRefreshBookings();
     } finally {
       setLoading(false);
@@ -241,20 +218,16 @@ const MyBookings = () => {
   };
 
   const getBookingStatus = (booking) => {
-    // Log for debugging
     console.log('Getting status for booking:', booking._id, 'Status:', booking.status);
     
-    // First, explicitly check for cancelled status
     if (booking.status === 'cancelled') {
       return { text: 'Cancelled', class: 'bg-red-100 text-red-800' };
     }
     
-    // Then check for pending status
     if (booking.status === 'pending') {
       return { text: 'Pending', class: 'bg-yellow-100 text-yellow-800' };
     }
 
-    // For confirmed bookings, check if the event date has passed
     const eventDate = booking.event?.startDate 
       ? new Date(booking.event.startDate) 
       : (booking.event?.date ? new Date(booking.event.date) : null);
@@ -296,14 +269,12 @@ const MyBookings = () => {
       return;
     }
 
-    // Check if event exists
     if (!booking.event) {
       toast.error('Event information not available');
       return;
     }
 
     try {
-      // Create a temporary div to render the ticket
       const ticketDiv = document.createElement('div');
       ticketDiv.style.position = 'absolute';
       ticketDiv.style.left = '-9999px';
@@ -349,16 +320,13 @@ const MyBookings = () => {
       
       document.body.appendChild(ticketDiv);
       
-      // Convert to canvas
       const canvas = await html2canvas(ticketDiv, {
         scale: 2,
         backgroundColor: '#ffffff'
       });
       
-      // Remove the temporary div
       document.body.removeChild(ticketDiv);
       
-      // Generate PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
@@ -367,7 +335,6 @@ const MyBookings = () => {
       
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height);
       
-      // Download the PDF
       pdf.save(`ticket-${booking.event?.title?.replace(/\s+/g, '-') || 'event'}-${booking._id.slice(-8)}.pdf`);
       
       toast.success('Ticket downloaded successfully');
@@ -432,7 +399,6 @@ const MyBookings = () => {
       ) : (
         <div className="space-y-6">
           {bookings.map(booking => {
-            // Debug output to help diagnose issues
             console.log('Rendering booking:', booking);
             
             const event = booking.event || {};
@@ -441,7 +407,6 @@ const MyBookings = () => {
                             (event.date ? new Date(event.date) : new Date());
             const canCancel = booking.status !== 'cancelled' && eventDate > new Date();
             
-            // If event doesn't exist, show special UI
             if (!booking.event) {
               return (
                 <div key={booking._id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
@@ -469,14 +434,12 @@ const MyBookings = () => {
               <div key={booking._id} className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
                 <div className="p-4 sm:p-6">
                   <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
-                    {/* Event Image */}
                     <img
                       src={event.imageUrl || 'https://via.placeholder.com/200x150'}
                       alt={event.title || 'Event'}
                       className="w-full md:w-48 h-32 object-cover rounded-lg"
                     />
                     
-                    {/* Booking Details */}
                     <div className="flex-1">
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-4">
                         <div>
@@ -504,7 +467,6 @@ const MyBookings = () => {
                         </span>
                       </div>
 
-                      {/* Seats and Price */}
                       <div className="flex flex-wrap gap-3 sm:gap-6 mb-4">
                         <div>
                           <p className="text-xs sm:text-sm text-gray-500">Seats</p>
@@ -527,7 +489,6 @@ const MyBookings = () => {
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="flex flex-wrap gap-3">
                         <button
                           onClick={() => setSelectedBooking(booking)}
@@ -581,7 +542,6 @@ const MyBookings = () => {
         </div>
       )}
 
-      {/* Ticket Modal */}
       {selectedBooking && selectedBooking.event && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-auto">
@@ -596,8 +556,6 @@ const MyBookings = () => {
                   <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
-
-              {/* QR Code or Pending Status */}
               {selectedBooking.status === 'confirmed' ? (
                 qrCodes[selectedBooking._id] ? (
                   <div className="text-center mb-6">
@@ -634,7 +592,6 @@ const MyBookings = () => {
                 </div>
               )}
 
-              {/* Ticket Details */}
               <div className="space-y-4 text-xs sm:text-sm">
                 <div className="border-t pt-4">
                   <p className="font-semibold text-base sm:text-lg mb-2">

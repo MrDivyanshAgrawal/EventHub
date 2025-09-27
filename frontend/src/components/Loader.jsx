@@ -1,4 +1,3 @@
-// src/components/Loader.jsx
 import React from 'react';
 
 const Loader = ({ size = 'medium', text = 'Loading...' }) => {

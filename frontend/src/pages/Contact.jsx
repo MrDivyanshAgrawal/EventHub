@@ -22,7 +22,6 @@ const Contact = () => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate form submission
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);
@@ -37,7 +36,6 @@ const Contact = () => {
 
   return (
     <div className="bg-white">
-      {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="text-center">
@@ -49,7 +47,6 @@ const Contact = () => {
         </div>
       </div>
 
-      {/* Contact Information */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-6 md:gap-8">
@@ -99,7 +96,6 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* Contact Form */}
       <section className="py-12 bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
@@ -203,7 +199,6 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
       <section className="py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">

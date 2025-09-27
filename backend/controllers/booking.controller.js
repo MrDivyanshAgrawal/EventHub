@@ -5,10 +5,8 @@ import cloudinary from "../utils/cloudinary.utils.js";
 import { io } from "../utils/socket.utils.js";
 import QRCode from "qrcode";
 
-// Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Generate unique ticket code
 const generateTicketCode = () => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -18,7 +16,6 @@ const generateTicketCode = () => {
   return code;
 };
 
-// Generate QR code for a ticket
 const generateQRCode = async (ticketCode) => {
   try {
     const qrDataURL = await QRCode.toDataURL(ticketCode);
@@ -36,9 +33,8 @@ const generateQRCode = async (ticketCode) => {
 // @route   POST /api/bookings
 export const createBooking = async (req, res) => {
   try {
-    const { eventId, selectedSeats, paymentId } = req.body; // Now accepting paymentId
+    const { eventId, selectedSeats, paymentId } = req.body; 
     
-    // Validate request
     if (!eventId || !selectedSeats || selectedSeats.length === 0) {
       return res.status(400).json({
         success: false,
@@ -146,7 +142,6 @@ export const confirmBooking = async (req, res) => {
     const { id } = req.params;
     const { paymentIntentId } = req.body;
     
-    // Find the booking
     const booking = await Booking.findById(id);
     
     if (!booking) {
@@ -156,7 +151,6 @@ export const confirmBooking = async (req, res) => {
       });
     }
     
-    // Verify that the user owns this booking
     if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -164,7 +158,6 @@ export const confirmBooking = async (req, res) => {
       });
     }
     
-    // Verify payment with Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(
       paymentIntentId || booking.paymentId
     );
@@ -176,13 +169,10 @@ export const confirmBooking = async (req, res) => {
       });
     }
     
-    // Generate ticket code
     const ticketCode = generateTicketCode();
     
-    // Generate QR code
     const qrCode = await generateQRCode(ticketCode);
     
-    // Update booking status
     booking.paymentStatus = "completed";
     booking.status = "confirmed";
     booking.ticketCode = ticketCode;
@@ -190,18 +180,14 @@ export const confirmBooking = async (req, res) => {
     
     await booking.save();
     
-    // Update event's seat availability
     const event = await Event.findById(booking.event);
     
     if (event) {
-      // Track successfully booked seats for notification
       const bookedSeatIds = [];
       
-      // Update seats availability
       for (const bookedSeat of booking.seats) {
         const seat = event.seats.id(bookedSeat.seatId);
         if (seat) {
-          // Only update if the seat is not already marked as unavailable
           if (seat.isAvailable) {
             seat.isAvailable = false;
             bookedSeatIds.push(bookedSeat.seatId.toString());
@@ -209,20 +195,16 @@ export const confirmBooking = async (req, res) => {
         }
       }
       
-      // Only update available seats count if we actually changed any seats
       if (bookedSeatIds.length > 0) {
-        // Ensure we don't go below 0 available seats
         event.availableSeats = Math.max(0, event.availableSeats - bookedSeatIds.length);
         await event.save();
         
-        // Notify all clients in event room about booked seats
         io.to(`event:${booking.event}`).emit("seatsBooked", { 
           seats: bookedSeatIds
         });
       }
     }
     
-    // Return the confirmed booking with ticket details
     res.status(200).json({
       success: true,
       message: "Booking confirmed successfully",
@@ -251,17 +233,13 @@ export const getUserBookings = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
     
-    // Build query
     const query = { user: req.user._id };
     
     if (status) {
       query.status = status;
     }
-    
-    // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    // Execute query
     const bookings = await Booking.find(query)
       .populate({
         path: "event",
@@ -271,7 +249,6 @@ export const getUserBookings = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
     
-    // Get total count
     const total = await Booking.countDocuments(query);
     
     res.status(200).json({
@@ -314,9 +291,6 @@ export const getBooking = async (req, res) => {
       });
     }
     
-    // Check authorization - user can only see their own bookings
-    // Organizers can see bookings for their events
-    // Admins can see all bookings
     const isOwner = booking.user._id.toString() === req.user._id.toString();
     const isOrganizer = booking.event.organizer._id.toString() === req.user._id.toString();
     const isAdmin = req.user.role === "admin";
@@ -342,8 +316,6 @@ export const getBooking = async (req, res) => {
   }
 };
 
-// @desc    Cancel a booking
-// @route   PUT /api/bookings/:id/cancel
 export const cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -355,7 +327,6 @@ export const cancelBooking = async (req, res) => {
       });
     }
     
-    // Only the booking owner or an admin can cancel
     if (booking.user.toString() !== req.user._id.toString() && 
         req.user.role !== "admin") {
       return res.status(403).json({
@@ -364,7 +335,6 @@ export const cancelBooking = async (req, res) => {
       });
     }
     
-    // Can't cancel if already cancelled
     if (booking.status === "cancelled") {
       return res.status(400).json({
         success: false,
@@ -372,10 +342,8 @@ export const cancelBooking = async (req, res) => {
       });
     }
     
-    // Handle payment refund if needed
     if (booking.paymentStatus === "completed") {
       try {
-        // Create a refund with Stripe
         await stripe.refunds.create({
           payment_intent: booking.paymentId,
           reason: "requested_by_customer"
@@ -385,7 +353,6 @@ export const cancelBooking = async (req, res) => {
       } catch (error) {
         console.error("Error processing refund:", error);
         
-        // Handle already refunded charges
         if (error.code === 'charge_already_refunded') {
           console.log("Charge was already refunded, proceeding with cancellation");
           booking.paymentStatus = "refunded";
@@ -398,24 +365,18 @@ export const cancelBooking = async (req, res) => {
         }
       }
     }
-    
-    // Update booking status
     booking.status = "cancelled";
     await booking.save();
     
-    // Release seats back to available
     const event = await Event.findById(booking.event);
     
     if (event) {
-      // Track successfully released seats for notification
       const releasedSeatIds = [];
       
-      // Check each seat to see if it needs to be released
       for (const bookedSeat of booking.seats) {
         const seat = event.seats.id(bookedSeat.seatId);
         
         if (seat) {
-          // Only mark as available if it's not already available
           if (!seat.isAvailable) {
             seat.isAvailable = true;
             releasedSeatIds.push(bookedSeat.seatId.toString());
@@ -423,16 +384,13 @@ export const cancelBooking = async (req, res) => {
         }
       }
       
-      // Only update available seats count if we actually made changes
       if (releasedSeatIds.length > 0) {
-        // Use Math.min to ensure we don't go over the total seats
         event.availableSeats = Math.min(
           event.totalSeats,
           event.availableSeats + releasedSeatIds.length
         );
         await event.save();
         
-        // Notify all clients in event room about released seats
         io.to(`event:${booking.event}`).emit("seatsReleased", {
           seats: releasedSeatIds
         });
@@ -484,7 +442,6 @@ export const verifyTicket = async (req, res) => {
       });
     }
     
-    // Check if the user is the organizer or an admin
     if (booking.event.organizer._id.toString() !== req.user._id.toString() && 
         req.user.role !== "admin") {
       return res.status(403).json({
@@ -493,7 +450,6 @@ export const verifyTicket = async (req, res) => {
       });
     }
     
-    // Check if ticket is for a confirmed booking
     if (booking.status !== "confirmed") {
       return res.status(400).json({
         success: false,
@@ -501,7 +457,6 @@ export const verifyTicket = async (req, res) => {
       });
     }
     
-    // Check if already checked in
     if (booking.checkedIn) {
       return res.status(400).json({
         success: false,
@@ -510,7 +465,6 @@ export const verifyTicket = async (req, res) => {
       });
     }
     
-    // Mark as checked in
     booking.checkedIn = true;
     booking.checkedInAt = new Date();
     await booking.save();
@@ -548,11 +502,9 @@ export const getOrganizerBookings = async (req, res) => {
   try {
     const { eventId, status, page = 1, limit = 10 } = req.query;
     
-    // Find events organized by the user
     let eventIds = [];
     
     if (eventId) {
-      // Check if the user is the organizer of this event
       const event = await Event.findById(eventId);
       if (!event) {
         return res.status(404).json({
@@ -571,7 +523,6 @@ export const getOrganizerBookings = async (req, res) => {
       
       eventIds.push(eventId);
     } else {
-      // Get all events organized by the user
       const events = await Event.find({ organizer: req.user._id }).select("_id");
       eventIds = events.map(event => event._id);
     }
@@ -587,17 +538,14 @@ export const getOrganizerBookings = async (req, res) => {
       });
     }
     
-    // Build query
     const query = { event: { $in: eventIds } };
     
     if (status) {
       query.status = status;
     }
     
-    // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    // Execute query
     const bookings = await Booking.find(query)
       .populate({
         path: "event",
@@ -611,7 +559,6 @@ export const getOrganizerBookings = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
     
-    // Get total count
     const total = await Booking.countDocuments(query);
     
     res.status(200).json({
@@ -632,12 +579,10 @@ export const getOrganizerBookings = async (req, res) => {
   }
 };
 
-// Manual confirm booking function (for admins or testing)
 export const manualConfirmBooking = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check admin permissions
     if (req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
@@ -653,11 +598,9 @@ export const manualConfirmBooking = async (req, res) => {
       });
     }
     
-    // Generate ticket code and QR code
     const ticketCode = generateTicketCode();
     const qrCode = await generateQRCode(ticketCode);
     
-    // Update booking
     booking.status = "confirmed";
     booking.paymentStatus = "completed";
     booking.ticketCode = ticketCode;
@@ -665,7 +608,6 @@ export const manualConfirmBooking = async (req, res) => {
     
     await booking.save();
     
-    // Update event seats (with the same safeguards as normal confirmation)
     const event = await Event.findById(booking.event);
     if (event) {
       const updatedSeats = [];
@@ -704,6 +646,222 @@ export const manualConfirmBooking = async (req, res) => {
       success: false,
       message: "Server error",
       error: error.message
+    });
+  }
+};
+
+// Add these new controllers to your existing booking.controller.js
+
+// @desc    Get all bookings in the system (Admin only)
+// @route   GET /api/bookings/admin/all
+export const getAllBookings = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required"
+      });
+    }
+
+    const { status, eventId, userId, page = 1, limit = 20 } = req.query;
+    
+    const query = {};
+    if (status) query.status = status;
+    if (eventId) query.event = eventId;
+    if (userId) query.user = userId;
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const bookings = await Booking.find(query)
+      .populate({
+        path: "event",
+        select: "title startDate location organizer",
+        populate: { path: "organizer", select: "name email" }
+      })
+      .populate({
+        path: "user",
+        select: "name email"
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await Booking.countDocuments(query);
+    
+    const stats = await Booking.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+          totalRevenue: { 
+            $sum: { 
+              $cond: [
+                { $eq: ["$status", "confirmed"] }, 
+                "$totalAmount", 
+                0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      total,
+      page: parseInt(page),
+      pages: Math.ceil(total / parseInt(limit)),
+      stats,
+      data: bookings
+    });
+  } catch (error) {
+    console.error("Error in getAllBookings controller:", error.message);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+};
+
+// @desc    Get booking analytics (Admin only)
+// @route   GET /api/bookings/admin/analytics
+export const getBookingAnalytics = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required"
+      });
+    }
+
+    const { startDate, endDate } = req.query;
+    
+    // Date filter
+    const dateFilter = {};
+    if (startDate || endDate) {
+      dateFilter.createdAt = {};
+      if (startDate) dateFilter.createdAt.$gte = new Date(startDate);
+      if (endDate) dateFilter.createdAt.$lte = new Date(endDate);
+    }
+    
+    // Revenue by status
+    const revenueStats = await Booking.aggregate([
+      { $match: dateFilter },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+          totalRevenue: { $sum: "$totalAmount" }
+        }
+      }
+    ]);
+    
+    // Daily booking trends
+    const dailyTrends = await Booking.aggregate([
+      { $match: dateFilter },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }
+          },
+          bookings: { $sum: 1 },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      { $sort: { "_id.date": 1 } }
+    ]);
+    
+    // Top events by bookings
+    const topEvents = await Booking.aggregate([
+      { $match: { status: "confirmed", ...dateFilter } },
+      { $group: { _id: "$event", bookings: { $sum: 1 }, revenue: { $sum: "$totalAmount" } } },
+      { $sort: { bookings: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: "events",
+          localField: "_id",
+          foreignField: "_id",
+          as: "eventDetails"
+        }
+      }
+    ]);
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        revenueStats,
+        dailyTrends,
+        topEvents
+      }
+    });
+  } catch (error) {
+    console.error("Error in getBookingAnalytics controller:", error.message);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error", 
+      error: error.message 
+    });
+  }
+};
+
+// @desc    Bulk actions on bookings (Admin only)
+// @route   PUT /api/bookings/admin/bulk-action
+export const bulkBookingAction = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required"
+      });
+    }
+
+    const { action, bookingIds } = req.body;
+    
+    if (!action || !bookingIds || !Array.isArray(bookingIds)) {
+      return res.status(400).json({
+        success: false,
+        message: "Action and booking IDs array are required"
+      });
+    }
+
+    let updateResult;
+    
+    switch (action) {
+      case 'confirm':
+        updateResult = await Booking.updateMany(
+          { _id: { $in: bookingIds }, status: 'pending' },
+          { status: 'confirmed', paymentStatus: 'completed' }
+        );
+        break;
+        
+      case 'cancel':
+        updateResult = await Booking.updateMany(
+          { _id: { $in: bookingIds }, status: { $ne: 'cancelled' } },
+          { status: 'cancelled' }
+        );
+        break;
+        
+      default:
+        return res.status(400).json({
+          success: false,
+          message: "Invalid action"
+        });
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `${action} applied to ${updateResult.modifiedCount} bookings`,
+      modifiedCount: updateResult.modifiedCount
+    });
+  } catch (error) {
+    console.error("Error in bulkBookingAction controller:", error.message);
+    res.status(500).json({ 
+      success: false,
+      message: "Server error", 
+      error: error.message 
     });
   }
 };

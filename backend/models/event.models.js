@@ -122,7 +122,6 @@ const eventSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Add index for common search queries
 eventSchema.index({ startDate: 1 });
 eventSchema.index({ "location.city": 1 });
 eventSchema.index({ category: 1 });

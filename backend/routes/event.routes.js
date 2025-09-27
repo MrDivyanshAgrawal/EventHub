@@ -15,18 +15,14 @@ import { protect, authorize } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// Public routes
 router.get("/", getEvents);
 router.get("/:id", getEvent);
 
-// Protected routes - require authentication
 router.use(protect);
 
-// Routes for all authenticated users
 router.post("/:id/select-seat", selectSeat);
 router.post("/:id/release-seat", releaseSeat);
 
-// Routes for organizers and admins
 router.get("/organizer/events", authorize("organizer", "admin"), getOrganizerEvents);
 
 router.post("/", authorize("organizer", "admin"), createEvent);

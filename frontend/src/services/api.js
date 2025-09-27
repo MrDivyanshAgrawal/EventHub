@@ -10,10 +10,8 @@ const api = axios.create({
   }
 });
 
-// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // You can add auth headers here if needed
     return config;
   },
   (error) => {
@@ -21,16 +19,12 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only redirect to login if it's a 401 and not on the auth routes
     if (error.response?.status === 401 && !error.config.url.includes('/auth/')) {
-      // Clear any stored auth state
       window.location.href = '/login';
     } else if (error.response?.data?.message) {
-      // Only show error toast if it's not a 401 on profile check
       if (!(error.response.status === 401 && error.config.url.includes('/auth/profile'))) {
         toast.error(error.response.data.message);
       }

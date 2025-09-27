@@ -4,14 +4,11 @@ import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// Public routes
 router.get("/config", getStripeConfig);
-router.get("/webhook-test", testWebhook); // Add this line
+router.get("/webhook-test", testWebhook);
 
-// Public webhook route - needs raw body
 router.post("/webhook", express.raw({ type: "application/json" }), handleWebhook);
 
-// Protected routes
 router.use(protect);
 router.post("/create-intent", createPaymentIntent);
 
