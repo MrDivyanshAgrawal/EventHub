@@ -1,0 +1,51 @@
+<svg width="300" height="100" viewBox="0 0 300 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hubGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F97316;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon/Symbol -->
+  <g transform="translate(10, 20)">
+    <!-- Main hub circle -->
+    <circle cx="30" cy="30" r="18" fill="url(#logoGradient)" opacity="0.9"/>
+    
+    <!-- Connection nodes -->
+    <circle cx="10" cy="15" r="6" fill="url(#hubGradient)"/>
+    <circle cx="50" cy="15" r="6" fill="url(#hubGradient)"/>
+    <circle cx="10" cy="45" r="6" fill="url(#hubGradient)"/>
+    <circle cx="50" cy="45" r="6" fill="url(#hubGradient)"/>
+    
+    <!-- Connection lines -->
+    <line x1="16" y1="18" x2="24" y2="24" stroke="#4F46E5" stroke-width="2" opacity="0.7"/>
+    <line x1="44" y1="18" x2="36" y2="24" stroke="#4F46E5" stroke-width="2" opacity="0.7"/>
+    <line x1="16" y1="42" x2="24" y2="36" stroke="#4F46E5" stroke-width="2" opacity="0.7"/>
+    <line x1="44" y1="42" x2="36" y2="36" stroke="#4F46E5" stroke-width="2" opacity="0.7"/>
+    
+    <!-- Central hub icon -->
+    <circle cx="30" cy="30" r="4" fill="white"/>
+  </g>
+  
+  <!-- Text -->
+  <g transform="translate(80, 30)">
+    <!-- Event -->
+    <text x="0" y="25" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#2D3748">
+      Event
+    </text>
+    
+    <!-- Hub -->
+    <text x="82" y="25" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="url(#hubGradient)">
+      Hub
+    </text>
+    
+    <!-- Tagline -->
+    <text x="0" y="45" font-family="Arial, sans-serif" font-size="14" fill="#718096" font-weight="bold" font-style="italic">
+      Book Your Next Experience
+    </text>
+  </g>
+</svg>

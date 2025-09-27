@@ -820,29 +820,87 @@ export const bulkBookingAction = async (req, res) => {
 
     const { action, bookingIds } = req.body;
     
-    if (!action || !bookingIds || !Array.isArray(bookingIds)) {
+    if (!action || !bookingIds || !Array.isArray(bookingIds) || bookingIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Action and booking IDs array are required"
+        message: "Action and a non-empty booking IDs array are required"
       });
     }
 
-    let updateResult;
-    
+    let modifiedCount = 0;
+
     switch (action) {
-      case 'confirm':
-        updateResult = await Booking.updateMany(
+      case 'confirm': {
+        const confirmResult = await Booking.updateMany(
           { _id: { $in: bookingIds }, status: 'pending' },
-          { status: 'confirmed', paymentStatus: 'completed' }
+          { $set: { status: 'confirmed', paymentStatus: 'completed' } }
         );
+        modifiedCount = confirmResult.modifiedCount;
         break;
+      }
+      
+      case 'cancel': {
+        const bookingsToCancel = await Booking.find({
+          _id: { $in: bookingIds },
+          status: { $in: ['pending', 'confirmed'] }
+        }).select('event seats');
+
+        if (bookingsToCancel.length === 0) {
+          return res.status(200).json({
+            success: true,
+            message: "No eligible bookings to cancel.",
+            modifiedCount: 0
+          });
+        }
+
+        const actualBookingIdsToCancel = bookingsToCancel.map(b => b._id);
+
+        const cancelResult = await Booking.updateMany(
+          { _id: { $in: actualBookingIdsToCancel } },
+          { $set: { status: 'cancelled' } }
+        );
+        modifiedCount = cancelResult.modifiedCount;
         
-      case 'cancel':
-        updateResult = await Booking.updateMany(
-          { _id: { $in: bookingIds }, status: { $ne: 'cancelled' } },
-          { status: 'cancelled' }
-        );
+        const eventSeatMap = new Map();
+
+        for (const booking of bookingsToCancel) {
+          const eventId = booking.event.toString();
+          if (!eventSeatMap.has(eventId)) {
+            eventSeatMap.set(eventId, new Set());
+          }
+          const seatIds = booking.seats.map(s => s.seatId.toString());
+          seatIds.forEach(id => eventSeatMap.get(eventId).add(id));
+        }
+        
+        for (const [eventId, seatIdsSet] of eventSeatMap.entries()) {
+          const event = await Event.findById(eventId);
+          if (event) {
+            const releasedSeatIds = Array.from(seatIdsSet);
+            let seatsMadeAvailable = 0;
+            
+            event.seats.forEach(seat => {
+              if (releasedSeatIds.includes(seat._id.toString()) && !seat.isAvailable) {
+                seat.isAvailable = true;
+                seatsMadeAvailable++;
+              }
+            });
+
+            if (seatsMadeAvailable > 0) {
+              event.availableSeats = Math.min(
+                event.totalSeats,
+                event.availableSeats + seatsMadeAvailable
+              );
+              await event.save();
+              
+              io.to(`event:${eventId}`).emit("seatsReleased", {
+                seats: releasedSeatIds
+              });
+              console.log(`Socket event 'seatsReleased' emitted for event ${eventId} with ${releasedSeatIds.length} seats.`);
+            }
+          }
+        }
         break;
+      }
         
       default:
         return res.status(400).json({
@@ -853,14 +911,14 @@ export const bulkBookingAction = async (req, res) => {
     
     res.status(200).json({
       success: true,
-      message: `${action} applied to ${updateResult.modifiedCount} bookings`,
-      modifiedCount: updateResult.modifiedCount
+      message: `${action.charAt(0).toUpperCase() + action.slice(1)} action applied to ${modifiedCount} bookings.`,
+      modifiedCount: modifiedCount
     });
   } catch (error) {
-    console.error("Error in bulkBookingAction controller:", error.message);
+    console.error(`Error in bulkBookingAction controller for action "${req.body.action}":`, error.message);
     res.status(500).json({ 
       success: false,
-      message: "Server error", 
+      message: "Server error during bulk action.", 
       error: error.message 
     });
   }
