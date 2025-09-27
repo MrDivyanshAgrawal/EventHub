@@ -76,7 +76,7 @@ EventHub/
 │   │   ├── redis.utils.js
 │   │   ├── cloudinary.utils.js
 │   │   └── socket.utils.js
-│   └── constants.js             # DB name file
+│   ├── constants.js             # DB name file
 │   └── server.js                # Main server file
 ├── 📂 frontend/
 │   ├── 📂 src/
@@ -300,4 +300,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 **🚀 [Live Demo](https://eventhub-t9i2.onrender.com) | 📚 [Documentation](#) | 🐛 [Report Bug](https://github.com/MrDivyanshAgrawal/EventHub/issues)**
 
 *Built with ❤️ using the MERN Stack*
-```
