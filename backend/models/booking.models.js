@@ -80,7 +80,6 @@ bookingSchema.index({ user: 1 });
 bookingSchema.index({ event: 1 });
 bookingSchema.index({ status: 1 });
 bookingSchema.index({ paymentStatus: 1 });
-bookingSchema.index({ ticketCode: 1 }, { unique: true, sparse: true }); // Ensure proper indexing
 bookingSchema.index({ paymentId: 1 }); // Add index for paymentId for faster lookups
 
 const Booking = mongoose.model("Booking", bookingSchema);
