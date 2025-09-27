@@ -1,6 +1,7 @@
 {
   "name": "event-booking-system",
   "version": "1.0.0",
+  "description": "🎟️ EventHub - Book Your Next Experience — A full-stack event booking system with seat selection, real-time updates, secure payments, and admin event management. Built with React, Vite, TailwindCSS, Node.js, Express, MongoDB, Stripe, and Socket.io.",
   "main": "server.js",
   "scripts": {
     "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
@@ -8,5 +9,12 @@
   },
   "author": "DIvyansh Agrawal",
   "license": "ISC",
-  "description": ""
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrDivyanshAgrawal/EventHub.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MrDivyanshAgrawal/EventHub/issues"
+  },
+  "homepage": "https://github.com/MrDivyanshAgrawal/EventHub#readme"
 }
