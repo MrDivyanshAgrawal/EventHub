@@ -1,6 +1,5 @@
-// src/utils/constants.js
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.MODE === 'development' ? 'http://localhost:5000/api' : '/api');
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.MODE === 'development' ? 'http://localhost:5000' : '/');
 
 export const EVENT_CATEGORIES = [
   { value: 'concert', label: 'Concerts', icon: '🎵' },
